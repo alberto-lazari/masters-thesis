@@ -1,0 +1,25 @@
+#import "template.typ": template
+
+#show: template.with(
+  affiliation: (
+    university:   [University of Padua],
+    department:   [Department of Mathematics "Tullio Levi-Civita"],
+    degree:       [Master's Degree in Computer Science],
+  ),
+
+  title:          [The Very Long Title of My Computer Science Master's Thesis],
+  keywords:       (),
+
+  supervisor: (
+    name:         [Prof. Eleonora Losiouk],
+    affiliation:  [University of Padua],
+  ),
+  candidate: (
+    name:         "Alberto Lazari",
+    id:           2089120,
+  ),
+  academic-year:  [2023--2024],
+  date:           datetime(year: 2024, month: 12, day: 13),
+
+  lang:           "en",
+)
