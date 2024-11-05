@@ -39,11 +39,17 @@
   )
 
   set page(
-    margin: (
+    margin: if printed {(
       top: 1in + 22pt + 18pt + 12pt,
-      x: 3.5cm,
-      bottom: 3.5cm
-    ),
+      inside: 4cm,
+      outside: 3cm,
+      bottom: 3.5cm,
+    )} else {(
+      top: 1in + 22pt + 18pt + 12pt,
+      left: 3.5cm,
+      right: 3.5cm,
+      bottom: 3.5cm,
+    )},
     header-ascent: 12pt + 18pt
   )
   set text(lang: lang)
