@@ -9,7 +9,7 @@
   #image(height: 6cm, "../images/unipd-logo.png")
   #v(10pt)
 
-  #text(size: 20pt, strong(affiliation.university))
+  #text(size: 22pt, strong(affiliation.university))
 
   #line(length: 100%, stroke: .5pt + rgb("#777777"))
   #v(-.5em)

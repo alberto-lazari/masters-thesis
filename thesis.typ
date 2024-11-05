@@ -8,7 +8,12 @@
   ),
 
   title:          [The Very Long Title of My Computer Science Master's Thesis],
-  keywords:       (),
+  keywords: (
+                  "Android virtualization",
+                  "Android sandbox",
+                  "Android permission model",
+                  "VirtualApp",
+  ),
 
   supervisor: (
     name:         [Prof. Eleonora Losiouk],
@@ -23,3 +28,10 @@
 
   lang:           "en",
 )
+
+#let chapters = (
+  "introduction",
+)
+#for chapter in chapters {
+  include "chapters/" + chapter + ".typ"
+}

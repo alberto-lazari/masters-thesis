@@ -1,4 +1,4 @@
-#import "config/printed.typ": pagebreak-to-right, pagebreak-to-left, left-right-margins, printed
+#import "config/printed.typ": pagebreak-to-right, pagebreak-to-left, left-right-margins, printed, printed-header
 
 #import "preface/titlepage.typ": titlepage
 #import "preface/copyright.typ": copyright
@@ -39,11 +39,15 @@
   )
 
   set page(
-    margin: (top: 1in + 22pt + 18pt + 12pt, x: 3.5cm, bottom: 3.5cm),
+    margin: (
+      top: 1in + 22pt + 18pt + 12pt,
+      x: 3.5cm,
+      bottom: 3.5cm
+    ),
     header-ascent: 12pt + 18pt
   )
   set text(lang: lang)
-  set text(font: "New Computer Modern", size: 11pt)
+  set text(size: 11pt)
   set par(justify: true)
 
   {
@@ -74,32 +78,45 @@
       set text(size: 13pt)
 
       let next_chapters = query(selector(heading.where(level: 1)).after(here()))
+      let chapter-opening = next_chapters.len() > 0 and next_chapters.at(0).location().page() == here().page()
+      let page-number = counter(page).get().at(0)
+      let chapter = [
+        #numbering("1", counter(heading).get().at(0)).
+        #smallcaps(query(selector(heading.where(level: 1)).before(here())).last().body)
+      ]
+      let subsection = [
+        #numbering("1.1", ..counter(heading).get()).
+        #smallcaps(query(selector(heading).before(here())).last().body)
+      ]
+      let line = {
+        v(-.7em)
+        line(length: 100%, stroke: .5pt)
+      }
 
-      if next_chapters.len() > 0 and next_chapters.at(0).location().page() == here().page() {
-        align(right)[#counter(page).get().at(0)]
-      } else {
-        let chapter = query(selector(heading.where(level: 1)).before(here())).last()
-        if calc.rem(here().page(), 2) == 0 {
-          grid(
-            align: (left, right),
-            columns: (auto, 1fr),
-            [#counter(page).get().at(0)],
-            [#numbering("1", counter(heading).get().at(0)). #smallcaps(chapter.body)],
-          )
-        } else {
-          let subsection = query(selector(heading).before(here())).last()
-
-          grid(
-            align: (left, right),
-            columns: (1fr, auto),
-            [#numbering("1.1", ..counter(heading).get()). #smallcaps(subsection.body)],
-            [#counter(page).get().at(0)],
-          )
-        }
+      if printed {
+        printed-header(
+          page-number: page-number,
+          chapter: chapter,
+          subsection: subsection,
+          chapter-opening: chapter-opening,
+          line: line,
+        )
+      } else if not chapter-opening {
+        grid(
+          align: (left, right),
+          columns: (1fr, auto),
+          [#chapter],
+          [#subsection],
+        )
+        line
       }
     }
 
-    set page(numbering: "1", header: if printed { header }, footer: if printed { [] } else { none })
+    set page(
+      numbering: "1",
+      header: header,
+      number-align: if printed { top } else { center + bottom },
+    )
     counter(page).update(1)
 
     set heading(numbering: "1.1.1")

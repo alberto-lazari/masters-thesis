@@ -8,6 +8,6 @@
 #let copyright(name, title, date) = page(align(bottom)[
   #name:
   _#no-linebreak(title)_,
-  #degree,
+  #degree
   #sym.copyright #date.display("[month repr:long] [year]").
 ])

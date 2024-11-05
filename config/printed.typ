@@ -15,14 +15,43 @@
 
 #let pagebreak-to-left(weak: false, printed: printed) = pagebreak-to("even", weak, printed)
 
-#let left-right-margins(page, printed: printed) = {
+#let left-right-margins(page-number, printed: printed) = {
   if not printed {
     return (left: 3cm, right: 3cm)
   }
 
-  if calc.rem(page, 2) == 0 {
+  if calc.rem(page-number, 2) == 0 {
     return (left: 3cm, right: 4cm)
   } else {
     return (left: 4cm, right: 3cm)
+  }
+}
+
+#let printed-header(
+  page-number: none,
+  chapter: none,
+  subsection: none,
+  chapter-opening: false,
+  line: none,
+) = {
+  if chapter-opening {
+    align(right)[#page-number]
+  } else {
+    if calc.rem(here().page(), 2) == 0 {
+      grid(
+        align: (left, right),
+        columns: (auto, 1fr),
+        [#page-number],
+        [#chapter],
+      )
+    } else {
+      grid(
+        align: (left, right),
+        columns: (1fr, auto),
+        [#subsection],
+        [#page-number],
+      )
+    }
+    line
   }
 }
