@@ -19,7 +19,7 @@
   #text(size: 12pt, smallcaps(affiliation.degree))
 
   #v(30pt)
-  #text(size: 20pt, fill: accent-color, strong(title))
+  #text(size: 19pt, fill: accent-color, strong(title))
 
   #v(20pt)
 

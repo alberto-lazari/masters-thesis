@@ -12,7 +12,7 @@
     #show outline.entry.where(level: 1): it => {
       show repeat: none
       v(12pt, weak: true)
-      smallcaps(it)
+      strong(smallcaps(it))
     }
 
     #outline(title: [= Index] + v(.5em), indent: auto)

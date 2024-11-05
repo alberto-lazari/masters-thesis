@@ -7,7 +7,7 @@
     degree:       [Master's Degree in Computer Science],
   ),
 
-  title:          [The Very Long Title of My Computer Science Master's Thesis],
+  title:          [Towards Secure Virtual Apps: Bringing Android Permission Model to Application Virtualization],
   keywords: (
                   "Android virtualization",
                   "Android sandbox",

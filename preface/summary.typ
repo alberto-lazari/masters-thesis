@@ -1,7 +1,8 @@
 #let summary() = page[
   #v(1cm)
 
-  = Summary
+  = Abstract
+  Permission management for virtual apps in existing solutions
 
   #v(1cm)
 ]

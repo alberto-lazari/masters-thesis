@@ -26,7 +26,7 @@
   keywords: (),
 
   lang: "it",
-  accent-color: rgb("#A5020B"),
+  accent-color: rgb("#B5121B"),
   date: datetime.today(),
 
   body
@@ -41,13 +41,13 @@
   set page(
     margin: if printed {(
       top: 1in + 22pt + 18pt + 12pt,
-      inside: 4cm,
-      outside: 3cm,
+      inside: 3.5cm,
+      outside: 2.5cm,
       bottom: 3.5cm,
     )} else {(
       top: 1in + 22pt + 18pt + 12pt,
-      left: 3.5cm,
-      right: 3.5cm,
+      left: 3cm,
+      right: 3cm,
       bottom: 3.5cm,
     )},
     header-ascent: 12pt + 18pt
@@ -125,10 +125,10 @@
     )
     counter(page).update(1)
 
-    set heading(numbering: "1.1.1")
+    set heading(numbering: "1.1.1 ")
     show heading.where(level: 1): it => {
       pagebreak-to-right(weak: true)
-      h(-.3em)
+      h(-.1em)
       strong(text(size: 100pt, fill: accent-color, counter(heading).display(it.numbering)))
       v(-10pt)
       text(size: 24pt, it.body)
