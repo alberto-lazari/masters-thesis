@@ -4,6 +4,7 @@
   footer: [],
   margin: (bottom: 1.7cm),
 [
+  #set par(first-line-indent: 0pt)
   #show: align.with(center)
 
   #image(height: 6cm, "../images/unipd-logo.png")

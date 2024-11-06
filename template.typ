@@ -52,12 +52,27 @@
     )},
     header-ascent: 12pt + 18pt
   )
-  set text(lang: lang)
-  set text(size: 11pt)
-  set par(justify: true)
+  set text(
+    lang: lang,
+    size: 11pt,
+  )
+  set par(
+    justify: true,
+    first-line-indent: 1em,
+    spacing: .9em,
+  )
+  show heading: it => {
+    smallcaps(it)
+  }
+  set outline(depth: 3)
 
   {
     set heading(numbering: none)
+    show heading.where(level: 1): it => {
+      set text(24pt)
+      it
+      v(1.2em)
+    }
 
     set page(numbering: "i")
     titlepage(
@@ -126,17 +141,30 @@
     counter(page).update(1)
 
     set heading(numbering: "1.1.1 ")
-    show heading.where(level: 1): it => {
-      pagebreak-to-right(weak: true)
-      h(-.1em)
-      strong(text(size: 100pt, fill: accent-color, counter(heading).display(it.numbering)))
-      v(-10pt)
-      text(size: 24pt, it.body)
-      v(1.5em)
-    }
-    show heading.where(level: 2): it => {
-      text(size: 18pt, it)
-      v(0.5em)
+    show heading: it => {
+      let level = it.level
+      if level == 1 {
+        pagebreak-to-right(weak: true)
+        block({
+          set par(first-line-indent: 0pt)
+          box(strong(text(
+            size: 100pt,
+            fill: accent-color,
+            counter(heading).display(it.numbering))))
+          parbreak()
+          smallcaps(text(size: 26pt, it.body))
+        })
+        v(2em)
+      } else if level == 2 {
+        text(size: 16pt, it)
+        v(.2em)
+      } else if level == 3 {
+        set text(size: 12pt)
+        it
+      } else if level > 3 {
+        smallcaps(it.body)
+        h(.5em)
+      }
     }
 
     set list(indent: 0.5em)

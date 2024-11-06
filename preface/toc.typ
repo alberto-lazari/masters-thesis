@@ -15,7 +15,7 @@
       strong(smallcaps(it))
     }
 
-    #outline(title: [= Index] + v(.5em), indent: auto)
+    #outline(title: [= Index] + v(-30pt), indent: auto)
   ]
   #extra-outline(title: [= Index of figures] + v(.5em), target: figure.where(kind: image))
   #extra-outline(title: [= Index of tables] + v(.5em), target: figure.where(kind: table))
