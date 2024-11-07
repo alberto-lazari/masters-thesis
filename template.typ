@@ -59,12 +59,16 @@
   set par(
     justify: true,
     first-line-indent: 1em,
-    spacing: .9em,
+    spacing: .8em,
   )
   show heading: it => {
     smallcaps(it)
   }
   set outline(depth: 3)
+  show link: it => {
+    set text(fill: accent-color)
+    it
+  }
 
   {
     set heading(numbering: none)
@@ -147,11 +151,13 @@
         pagebreak-to-right(weak: true)
         block({
           set par(first-line-indent: 0pt)
-          box(strong(text(
-            size: 100pt,
-            fill: accent-color,
-            counter(heading).display(it.numbering))))
-          parbreak()
+          if it.numbering != none {
+            box(strong(text(
+              size: 100pt,
+              fill: accent-color,
+              counter(heading).display(it.numbering))))
+              parbreak()
+          }
           smallcaps(text(size: 26pt, it.body))
         })
         v(2em)

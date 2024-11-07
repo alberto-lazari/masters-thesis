@@ -1,0 +1,36 @@
+@thesis{virtualpatch,
+  author = {Simeone Pizzi},
+  title = {VirtualPatch: Fixing Android Security Vulnerabilities with App-Level Virtualization},
+  year = {2022},
+  annote = {Master's thesis},
+  publisher = {University of Padua},
+  url = {https://thesis.unipd.it/bitstream/20.500.12608/32823/1/Pizzi_Simeone.pdf}
+}
+
+@inproceedings{parallel_space_traveling,
+  author = {Dai, Deshun and Li, Ruixuan and Tang, Junwei and Davanian, Ali and Yin, Heng},
+  title = {Parallel Space Traveling: A Security Analysis of App-Level Virtualization in Android},
+  year = {2020},
+  isbn = {9781450375689},
+  publisher = {Association for Computing Machinery},
+  address = {New York, NY, USA},
+  url = {https://doi.org/10.1145/3381991.3395608},
+  doi = {10.1145/3381991.3395608},
+  abstract = {App-level virtualization becomes increasingly popular. It allows multiple instances of an application to run simultaneously on the same Android system, without requiring modification of the Android firmware. These virtualization-capable apps are used by more than 100 million users worldwide. We conduct a systematic study of the implementation of app-level virtualization and the security threats that their users may face. First, we survey more than 160 apps collected from several popular app markets which can provide application virtualization capability. We find that these apps are implemented based on a similar design, and apps running in such a virtual environment are not completely isolated from each other. Second, we analyze malicious virtualized guest apps, and identify several areas of potential attack vectors, including privilege escalation, code injection, ransomware, etc. Malicious virtualized guest apps can launch reference hijacking attacks. Once a legitimate app is running in the virtual context, all of its sensitive data will be exposed to the host app. Third, we find a new type of repackaging attack. In our collection of 2 million app data set, we find that 68 apps pack and load malwares by using the virtualization technology to evade antivirus detection, 91 apps pack some legal apps for the purpose of wide distribution, and insert screen ads to gain profits at its startup. Finally, we discuss a variety of mitigation solutions for users, developers and vendors.},
+  booktitle = {Proceedings of the 25th ACM Symposium on Access Control Models and Technologies},
+  pages = {25–32},
+  numpages = {8},
+  keywords = {security threats, security enhancements, mobile security, application virtualization, android system},
+  location = {Barcelona, Spain},
+  series = {SACMAT '20}
+}
+
+@software{virtualapp,
+  title = {VirtualApp},
+  url = {https://github.com/asLody/VirtualApp}
+}
+
+@software{virtualxposed,
+  title = {VirtualXposed},
+  url = {https://github.com/android-hacker/VirtualXposed}
+}
