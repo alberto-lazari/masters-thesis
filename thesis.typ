@@ -36,7 +36,6 @@
   include "chapters/" + chapter + ".typ"
 }
 
-
 = Background <background>
 == App-level Virtualization
 - Different types

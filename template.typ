@@ -114,8 +114,8 @@
         #smallcaps(query(selector(heading).before(here())).last().body)
       ]
       let line = {
-        v(-.7em)
-        line(length: 100%, stroke: .5pt)
+        v(-.5em)
+        line(length: 100%, stroke: .3pt)
       }
 
       if printed {
@@ -145,6 +145,8 @@
     counter(page).update(1)
 
     set heading(numbering: "1.1.1 ")
+    show heading.where(level: 1): set heading(supplement: [Chapter])
+
     show heading: it => {
       let level = it.level
       if level == 1 {
