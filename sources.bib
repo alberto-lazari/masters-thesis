@@ -25,6 +25,25 @@
   series = {SACMAT '20}
 }
 
+@inproceedings{android_plugin,
+  author = {Zheng, Cong and Luo, Tongbo and Xu, Zhi and Hu, Wenjun and Ouyang, Xin},
+  title = {Android Plugin Becomes a Catastrophe to Android Ecosystem},
+  year = {2018},
+  isbn = {9781450357579},
+  publisher = {Association for Computing Machinery},
+  address = {New York, NY, USA},
+  url = {https://doi.org/10.1145/3203422.3203425},
+  doi = {10.1145/3203422.3203425},
+  abstract = {The Android Plugin is a new application-level virtualization technology in Android system. Android Plugin allows a host app to create a virtual environment, in which any other APK files can be directly launched as runnable plugins without the installation. Unlike the dynamic code loading, the plugin-enabled host app provides a proxy layer between plugin apps and the Android framework. This virtualization technology has been applied in the development of hot apps, such as the "Parallel Space" app. However, the Android Plugin technology has completely changed the landscape of Android ecosystem security. We will demonstrate our perspectives by proposing some attacks via Android Plugin: a) A zero-permission app can bypass the permission check and the data isolation mechanism by exploiting two vulnerabilities we discovered in Android plugin frameworks. b) A new Android phishing attack allows attackers to phish any target apps at no cost. c) The current app promotion system can also be compromised by attackers through directly launching as many as promoted apps in the plugin environment. d) With our developed tool "Z4Plugin", attackers can easily transform any malicious APK file to a new APK file, which can evade all engines in VirusTotal. At last, we have proposed mitigation solutions for above attacks.},
+  booktitle = {Proceedings of the First Workshop on Radical and Experiential Security},
+  pages = {61–64},
+  numpages = {4},
+  keywords = {android ecosystem, android plugin, virtualization},
+  location = {Incheon, Republic of Korea},
+  series = {RESEC '18}
+}
+
+
 @software{virtualapp,
   title = {VirtualApp},
   url = {https://github.com/asLody/VirtualApp}
@@ -33,4 +52,32 @@
 @software{virtualxposed,
   title = {VirtualXposed},
   url = {https://github.com/android-hacker/VirtualXposed}
+}
+
+@software{docker,
+  title = {Docker},
+  url = {https://www.docker.com}
+}
+
+@software{podman,
+  title = {Podman},
+  url = {https://podman.io}
+}
+
+@inproceedings{vpbox,
+author = {Song, Wenna and Ming, Jiang and Jiang, Lin and Xiang, Yi and Pan, Xuanchen and Fu, Jianming and Peng, Guojun},
+title = {Towards Transparent and Stealthy Android OS Sandboxing via Customizable Container-Based Virtualization},
+year = {2021},
+isbn = {9781450384544},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/3460120.3484544},
+doi = {10.1145/3460120.3484544},
+abstract = {A fast-growing demand from smartphone users is mobile virtualization.This technique supports running separate instances of virtual phone environments on the same device. In this way, users can run multiple copies of the same app simultaneously,and they can also run an untrusted app in an isolated virtual phone without causing damages to other apps. Traditional hypervisor-based virtualization is impractical to resource-constrained mobile devices.Recent app-level virtualization efforts suffer from the weak isolation mechanism. In contrast, container-based virtualization offers an isolated virtual environment with superior performance.However, existing Android containers do not meet the anti-evasion requirement for security applications: their designs are inherently incapable of providing transparency or stealthiness.In this paper, we present VPBox, a novel Android OS-level sandbox framework via container-based virtualization. We integrate the principle of anti-virtual-machine detection into VPBox's design from two aspects.First, we improve the state-of-the-art Android container work significantly for transparency.We are the first to offer complete device virtualization on mainstream Android versions.To minimize the fingerprints of VPBox's presence, we enable all virtualization components (i.e., kernel-level device and user level device virtualization) to be executed outside of virtual phones (VPs).Second, we offer new functionality that security analysts can customize device artifacts (e.g., phone model, kernel version, and hardware profiles) without user-level hooking. This capability prevents the tested apps from detecting the particular mobile device (e.g., Google Pixel phone) that runs an Android container.Our performance evaluation on five VPs shows that VPBox runs different benchmark apps at native speed.Compared with other Android sandboxes, VPBox is the only one that can bypass a set of virtual environment detection heuristics. At last, we demonstrate VPBox's flexibility in testing environment-sensitive malware that tries to evade sandboxes.},
+booktitle = {Proceedings of the 2021 ACM SIGSAC Conference on Computer and Communications Security},
+pages = {2858–2874},
+numpages = {17},
+keywords = {container-based virtualization, anti-evasion, android OS sandboxing},
+location = {Virtual Event, Republic of Korea},
+series = {CCS '21}
 }

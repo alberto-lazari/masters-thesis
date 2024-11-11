@@ -16,7 +16,7 @@ from the Android system perspective,
 with the consequence of many standard Android security principles not applying for plugin apps,
 like proper sandboxing support between virtualized apps or Android's permission model.
 
-As explored in previous works @parallel_space_traveling,
+As explored in previous works @parallel_space_traveling @android_plugin,
 a security threat concerning app-level virtualization is the vulnerability of container apps to privilege escalation attacks.
 In most available implementations, permissions that have been granted to the container are also automatically extended to plugin apps,
 even when they are not declaring permissions in their own manifest file or not requesting a runtime permission.
