@@ -109,10 +109,37 @@
         #numbering("1", counter(heading).get().at(0)).
         #smallcaps(query(selector(heading.where(level: 1)).before(here())).last().body)
       ]
-      let subsection = [
-        #numbering("1.1", ..counter(heading).get()).
-        #smallcaps(query(selector(heading).before(here())).last().body)
-      ]
+      let subsection = {
+        let number = numbering("1.1.", ..counter(heading).get())
+        let head = query(selector(heading).before(here(), inclusive: true)).last()
+        let after = query(selector(heading).after(here(), inclusive: true)).first()
+        // If the header is exactly above a new section write that
+        if locate(after.location()).position().y < 130pt {
+          number = numbering("1.1.", ..counter(heading).at(after.location()))
+          head = after
+        }
+        // Display a heading that is at most nested at level 3
+        if head.level > 3 {
+          number = numbering("1.1.", ..counter(heading).get().slice(0, count: 3))
+          head = query(selector(heading.where(level: 3)).before(here(), inclusive: true)).last()
+        }
+        let title = head.body
+        let characters
+        if title.has("text") {
+          characters = title.at("text", default: "").len()
+        } else if title.has("children") {
+          characters = title.at("children", default: ())
+            .fold("", (acc, it) => acc + it.at("text", default: " "))
+            .len()
+        }
+        let text-size = 1em
+        if characters > 30 {
+          // Prevent line breaks by shrinking long titles
+          text-size -= 0.015em * (characters - 30)
+        }
+        set text(size: text-size)
+        [#number #smallcaps(head.body)]
+      }
       let line = {
         v(-.5em)
         line(length: 100%, stroke: .3pt)
@@ -129,7 +156,7 @@
       } else if not chapter-opening {
         grid(
           align: (left, right),
-          columns: (1fr, auto),
+          columns: (auto, 1fr),
           [#chapter],
           [#subsection],
         )
