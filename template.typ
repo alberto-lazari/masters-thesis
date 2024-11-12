@@ -191,14 +191,18 @@
         })
         v(2em)
       } else if level == 2 {
+        v(.5em)
         text(size: 16pt, it)
-        v(.2em)
+        v(.3em)
       } else if level == 3 {
+        v(.2em)
         set text(size: 12pt)
         it
+        v(.2em)
       } else if level > 3 {
-        smallcaps(it.body)
-        h(.5em)
+        v(.5em)
+        smallcaps(it.body) + [.]
+        h(.2em)
       }
     }
 

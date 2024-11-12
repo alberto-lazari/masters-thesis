@@ -65,22 +65,22 @@ Virtualization frameworks have to interact with or replicate virtual versions of
 The following sections describe each layer's purpose,
 in order to provide some basic understanding needed to deal with Android virtualization.
 
-=== Application Layer (User Layer)
+=== Application Layer
 The Application layer consists of user-facing apps, that can be installed and managed by the user.
 Each app runs in its own sandboxed process, ensuring security and privacy by isolating apps from one another.
 The sandbox is guaranteed by these concepts:
 
-+	UID Model: each app is assigned a unique user ID (UID) by the system, which creates a dedicated Unix user for each app.
++	UID model: a unique user ID (UID) is assigned to each app by the system, by creating a dedicated Unix user.
   This ensures that each application has its own private storage directories and files, which are kept isolated from other apps.
 
-+	Process Separation: each app runs as a separate OS process,
++	Process separation: each app runs as a separate OS process,
   which means the underlying Linux OS process isolation applies by default,
   where the OS ensures that memory and resources allocated to one process are not accessible by others unless explicitly allowed.
 
-+	Permission Model: Android enforces a fine-grained permission model that controls access to specific system resources and data.
++	Permission model: Android enforces a fine-grained permission model that controls access to specific system resources and data.
   Permissions are granted based on the app UID and GID.
 
-=== System Layer (System Apps and Services)
+=== System Layer
 The System layer includes essential system applications and services that manage core functionalities of the OS,
 such as telephony, location and media.
 These components are granted elevated permissions and provide services that user apps rely on but cannot directly access.
@@ -116,15 +116,15 @@ While not an actual layer of the Android architecture,
 it is a crucial structural component.
 Its role is especially relevant in app-level virtualization and in the implementation of Android's permission model.
 
-=== Native Libraries and Hardware Abstraction Layer (HAL)
+=== Native Libraries and HAL
 Many components are implemented at a lower level using native C and C++ code and require native libraries providing basic system interaction,
 such as Libc, WebKit, and Media Framework.
-The HAL is one of these components and defines standard interfaces for hardware components,
+The hardware abstraction layer (HAL) is one of these components and defines standard interfaces for hardware components,
 allowing Android to interact with device hardware without requiring device-specific code at higher levels.
 
-=== Android Runtime (ART)
+=== Android Runtime
 Starting from Android 5,
-ART is the execution environment for Android apps,
+Android runtime (ART) is the execution environment for Android apps,
 each running its own instance of the runtime within its process.
 It compiles and executes the app's code in the Dalvik Executable format,
 a reduced bytecode format designed for minimal memory footprint on Android devices.
@@ -140,7 +140,43 @@ It is configured with custom Security-Enhanced Linux (SELinux) policies,
 to enforce mandatory access control (MAC) over all processes @selinux.
 
 == VirtualXposed
-Aim of the project
+=== The Project
+The original Xposed framework is a powerful tool designed for rooted Android devices
+that allows users to modify and customize system behavior at a deep level.
+It was developed for older Android versions and works by injecting code directly into the Android runtime,
+allowing users to change how both system and user applications behave,
+without altering their APK files.
+The framework hooks into the Android runtime (ART, or Dalvik in older versions),
+intercepting specific method calls from apps and system services.
+This hooking process allows modifications (called modules) to replace or extend the behavior of the original functions.
+For example, a module could hook into the method responsible for determining app permissions,
+allowing users to override permission checks or alter granted permissions dynamically.
+Similarly, Xposed modules can also alter UI elements, bypass in-app restrictions, block ads, or change app functionality based on user preferences.
+
+In the last years, Android's increasing security measures and restrictions on low-level access (more specifically SafetyNet)
+have made it more challenging to keep Xposed's full functionality on newer Android versions.
+Currently, Xposed has been discontinued and replaced by newer implementations,
+such as LSPosed @lsposed and EdXposed @edxposed.
+Additionally, root access has been progressively limited and discouraged in the Android OS over the course of time.
+
+VirtualXposed aim is to bring this functionality to unrooted devices by creating a virtualized environment,
+recreating the Xposed experience within a sandboxed space.
+It uses VirtualApp at its core to install and run apps in a virtual environment,
+injecting hooks at the application level.
+VirtualXposed is thus limited to modifying the virtual app behavior rather than system-wide functions.
+
+Over recent version updates,
+Android has introduced various security and architectural changes,
+which lead to many Xposed functionalities becoming partially broken or incompatible.
+Despite these limitations,
+VirtualXposed remains a valid project, providing a mature VirtualApp wrapper.
+This is particularly significant since VirtualApp has been closed-sourced by its author,
+meaning it is only actively maintained in its business version.
+However, within the scope of VirtualXposed,
+the framework has been maintained (to a certain degree) for compatibility with recent Android versions.
+This currently allows VirtualXposed to provide a functional, pre-configured application that comes with a fully integrated UI and launcher,
+removing the need for specific manual setup.
+
 === VirtualApp
 - How VirtualXposed uses VirtualApp and wraps its functionalities in a complete app
 - High-level structure
