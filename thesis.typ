@@ -42,4 +42,4 @@
   include "chapters/" + chapter + ".typ"
 }
 
-#bibliography("sources.bib")
+#bibliography("sources.bib", style: "bib-style.csl")

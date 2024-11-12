@@ -41,8 +41,8 @@
   set page(
     margin: if printed {(
       top: 1in + 22pt + 18pt + 12pt,
-      inside: 3.5cm,
-      outside: 2.5cm,
+      inside: 3.7cm,
+      outside: 2.3cm,
       bottom: 3.5cm,
     )} else {(
       top: 1in + 22pt + 18pt + 12pt,

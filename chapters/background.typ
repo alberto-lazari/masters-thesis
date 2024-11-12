@@ -48,17 +48,96 @@ providing a convenient method for offering isolation without requiring specializ
 The creation and management of the virtual environments is handled entirely within a single application, the _container app_,
 which can host one or more _plugin apps_, the virtualized apps.
 This design enables features such as:
+
 -	App cloning: running multiple instances of the same app simultaneously within isolated contexts.
+
 -	Sandboxed environments: enabling apps to run within a more restricted and controlled environment for enhancing security and research.
+
 -	Dynamic patches: applying hotfixes or updates to a virtualized environment without modifying the main system.
 
 == Android Architecture
-- User layer (app-level)
-- System layer
-- Framework
-- ART
-- Binder
-- Services
+The Android architecture consists of many layered components that interact to provide essential features.
+Each layer has specific responsibilities,
+from user applications down to the low-level system components,
+contributing to Android's performance, scalability, and security.
+
+Virtualization frameworks have to interact with or replicate virtual versions of some components, in some occasions.
+The following sections describe each layer's purpose,
+in order to provide some basic understanding needed to deal with Android virtualization.
+
+=== Application Layer (User Layer)
+The Application layer consists of user-facing apps, that can be installed and managed by the user.
+Each app runs in its own sandboxed process, ensuring security and privacy by isolating apps from one another.
+The sandbox is guaranteed by these concepts:
+
++	UID Model: each app is assigned a unique user ID (UID) by the system, which creates a dedicated Unix user for each app.
+  This ensures that each application has its own private storage directories and files, which are kept isolated from other apps.
+
++	Process Separation: each app runs as a separate OS process,
+  which means the underlying Linux OS process isolation applies by default,
+  where the OS ensures that memory and resources allocated to one process are not accessible by others unless explicitly allowed.
+
++	Permission Model: Android enforces a fine-grained permission model that controls access to specific system resources and data.
+  Permissions are granted based on the app UID and GID.
+
+=== System Layer (System Apps and Services)
+The System layer includes essential system applications and services that manage core functionalities of the OS,
+such as telephony, location and media.
+These components are granted elevated permissions and provide services that user apps rely on but cannot directly access.
+
+Examples of key system services include the Location Manager, Telephony Manager, Notification Manager.
+Each service provides standardized APIs for apps to access sensitive resources,
+often locking them with a permission.
+
+System apps are regular apps that come pre-installed with the system image and can be granted system permissions @privileged_permissions.
+They are installed under a read-only directory, to avoid deletion and modification.
+
+=== Java API Framework
+This layer provides a set of APIs that enables third-party applications to
+handle UI elements, manage application lifecycles, and control interactions between applications and system services.
+It is implemented as an extensive codebase of Java and Kotlin classes,
+which is described in the official documentation as the same framework used by system apps @framework_api,
+thus providing the entire feature-set of the Android OS.
+Starting with Android 9, however,
+the framework introduced a separation between SDK and non-SDK interfaces through the hidden APIs list @hidden_apis.
+This created a gap between the capabilities of system applications and those available to third-party applications,
+restricting access to certain internal features.
+
+=== Binder Mechanism
+The Binder mechanism is Android’s core inter-process communication (IPC) system,
+used allow components running in different processes to communicate with each other.
+Acting as a bridge between the application layer and system services,
+it provides a way for apps to request and access services and resources managed by the system.
+It is used to ensure security in the system is maintained,
+by enforcing permissions and sandbox policies,
+or allowing them to be enforced by the services themselves.
+
+While not an actual layer of the Android architecture,
+it is a crucial structural component.
+Its role is especially relevant in app-level virtualization and in the implementation of Android's permission model.
+
+=== Native Libraries and Hardware Abstraction Layer (HAL)
+Many components are implemented at a lower level using native C and C++ code and require native libraries providing basic system interaction,
+such as Libc, WebKit, and Media Framework.
+The HAL is one of these components and defines standard interfaces for hardware components,
+allowing Android to interact with device hardware without requiring device-specific code at higher levels.
+
+=== Android Runtime (ART)
+Starting from Android 5,
+ART is the execution environment for Android apps,
+each running its own instance of the runtime within its process.
+It compiles and executes the app's code in the Dalvik Executable format,
+a reduced bytecode format designed for minimal memory footprint on Android devices.
+It is able to leverage both Ahead-Of-Time (AOT) and Just-In-Time (JIT) compilation techniques,
+improving the balance between performance and memory usage.
+It also provides some runtime libraries to support most of the functionality of JVM-based languages,
+like the Java and Kotlin languages and Java 8 features.
+
+=== Linux Kernel
+At the foundation of the Android OS,
+a custom Linux kernel manages fundamental system tasks like memory management, process scheduling and control, and device I/O.
+It is configured with custom Security-Enhanced Linux (SELinux) policies,
+to enforce mandatory access control (MAC) over all processes @selinux.
 
 == VirtualXposed
 Aim of the project
