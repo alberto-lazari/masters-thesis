@@ -59,8 +59,20 @@
   set par(
     justify: true,
     first-line-indent: 1em,
-    spacing: .8em,
+    spacing: .7em,
   )
+  set list(spacing: 1em)
+  show list: it => {
+    v(.2em)
+    it
+    v(.2em)
+  }
+  set enum(spacing: 1em)
+  show enum: it => {
+    v(.2em)
+    it
+    v(.2em)
+  }
   show heading: it => {
     smallcaps(it)
   }
@@ -69,6 +81,16 @@
     set text(fill: accent-color)
     it
   }
+  show raw: it => {
+    set text(font: "Menlo")
+    it
+  }
+  // Add background to monospace text
+  show raw.where(block: true): block.with(
+    fill: luma(235),
+    inset: 10pt,
+    radius: 10pt,
+  )
 
   {
     set heading(numbering: none)
@@ -112,9 +134,14 @@
       let subsection = {
         let number = numbering("1.1.", ..counter(heading).get())
         let head = query(selector(heading).before(here(), inclusive: true)).last()
-        let after = query(selector(heading).after(here(), inclusive: true)).first()
+        let after = {
+          let headings = query(selector(heading).after(here(), inclusive: true))
+          if headings.len() > 0 {
+            headings.first()
+          }
+        }
         // If the header is exactly above a new section write that
-        if locate(after.location()).position().y < 130pt {
+        if after != none and locate(after.location()).position().y < 130pt {
           number = numbering("1.1.", ..counter(heading).at(after.location()))
           head = after
         }
@@ -202,7 +229,7 @@
       } else if level > 3 {
         v(.5em)
         smallcaps(it.body) + [.]
-        h(.2em)
+        h(.1em)
       }
     }
 
