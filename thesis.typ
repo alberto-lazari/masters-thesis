@@ -27,19 +27,14 @@
   date:           datetime(year: 2024, month: 12, day: 13),
 
   lang:           "en",
-)
 
-#let chapters = (
-  "introduction",
-  "background",
-  "related-work",
-  "implementation",
-  "evaluation",
-  "discussion",
-  "conclusions",
+  chapters: (
+    "introduction",
+    "background",
+    "related-work",
+    "implementation",
+    "evaluation",
+    "discussion",
+    "conclusions",
+  ),
 )
-#for chapter in chapters {
-  include "chapters/" + chapter + ".typ"
-}
-
-#bibliography("sources.bib", style: "bib-style.csl")

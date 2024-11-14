@@ -1,10 +1,8 @@
-#import "config/printed.typ": pagebreak-to-right, pagebreak-to-left, left-right-margins, printed, printed-header
+#import "config/printed.typ": pagebreak-to-right, pagebreak-to-left, left-right-margins, printed
+#import "config/header.typ": header, chapter
 
 #import "preface/titlepage.typ": titlepage
 #import "preface/copyright.typ": copyright
-#import "preface/acknowledgements.typ": acknowledgements
-#import "preface/summary.typ": summary
-#import "preface/toc.typ": toc
 
 #let template(
   affiliation: (
@@ -28,6 +26,8 @@
   lang: "it",
   accent-color: rgb("#B5121B"),
   date: datetime.today(),
+
+  chapters: (),
 
   body
 ) = {
@@ -109,109 +109,23 @@
       academic-year,
       accent-color,
     )
-    pagebreak-to-right(weak: true)
     copyright(candidate.name, title, date)
-    pagebreak-to-right(weak: true)
-    acknowledgements()
-    pagebreak-to-right(weak: true)
-    summary()
-    pagebreak-to-right(weak: true)
-    toc()
-    pagebreak-to-right(weak: true)
+    let preface = (
+      "acknowledgements",
+      "summary",
+      "toc",
+    )
+    for section in preface {
+      include "preface/" + section + ".typ"
+      pagebreak-to-right(weak: true)
+    }
   }
 
   {
-    let header = context {
-      set text(size: 13pt)
-
-      let next_chapters = query(selector(heading.where(level: 1)).after(here()))
-      let chapter-opening = next_chapters.len() > 0 and next_chapters.at(0).location().page() == here().page()
-      let page-number = counter(page).get().at(0)
-      let chapter = {
-        let title = smallcaps(query(selector(heading.where(level: 1)).before(here())).last().body)
-        // Don't show chapter number for bibliography
-        // TODO: find an elegant solution
-        let number = if title != smallcaps("Bibliography") {
-          numbering("1.", counter(heading).get().at(0))
-        }
-        [#number #title]
-      }
-      let subsection = {
-        let number = numbering("1.1.", ..counter(heading).get())
-        let head = query(selector(heading).before(here(), inclusive: true)).last()
-        let after = {
-          let headings = query(selector(heading).after(here(), inclusive: true))
-          if headings.len() > 0 {
-            headings.first()
-          }
-        }
-        // If the header is exactly above a new section write that
-        let use-after = {
-          if after != none {
-            let position = locate(after.location()).position()
-            position.page == page-number and position.y < 135pt
-          } else {
-            false
-          }
-        }
-        if use-after {
-          number = numbering("1.1.", ..counter(heading).at(after.location()))
-          head = after
-        }
-        // Display a heading that is at most nested at level 3
-        if head.level > 3 {
-          head = query(selector(heading).before(here(), inclusive: true))
-            .filter(it => it.level <= 3)
-            .last()
-          number = numbering("1.1.", ..counter(heading).get().slice(0, count: head.level))
-        }
-        let title = head.body
-        let characters
-        if title.has("text") {
-          characters = title.at("text", default: "").len()
-        } else if title.has("children") {
-          characters = title.at("children", default: ())
-            .fold("", (acc, it) => acc + it.at("text", default: " "))
-            .len()
-        }
-        let text-size = 1em
-        if characters > 30 {
-          // Prevent line breaks by shrinking long titles
-          text-size -= 0.015em * (characters - 30)
-        }
-        set text(size: text-size)
-        // Show only if a section or subsection. No need to show the chapter twice
-        if head.level > 1 {
-          [#number #smallcaps(head.body)]
-        }
-      }
-      let line = {
-        v(-.5em)
-        line(length: 100%, stroke: .3pt)
-      }
-
-      if printed {
-        printed-header(
-          page-number: page-number,
-          chapter: chapter,
-          subsection: subsection,
-          chapter-opening: chapter-opening,
-          line: line,
-        )
-      } else if not chapter-opening {
-        grid(
-          align: (left, right),
-          columns: (auto, 1fr),
-          [#chapter],
-          [#subsection],
-        )
-        line
-      }
-    }
 
     set page(
       numbering: "1",
-      header: header,
+      header: header(),
       number-align: if printed { top } else { center + bottom },
     )
     counter(page).update(1)
@@ -257,6 +171,15 @@
       show ".": math.class("punctuation", ".")
       it
     }
+
+    for chapter in chapters {
+      include "chapters/" + chapter + ".typ"
+    }
+
+    set page(
+      header: header(chapter: chapter(number: false), subsection: none),
+    )
+    bibliography("sources.bib", style: "bib-style.csl")
 
     body
   }

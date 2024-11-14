@@ -26,32 +26,3 @@
     return (left: 4cm, right: 3cm)
   }
 }
-
-#let printed-header(
-  page-number: none,
-  chapter: none,
-  subsection: none,
-  chapter-opening: false,
-  line: none,
-) = {
-  if chapter-opening {
-    align(right)[#page-number]
-  } else {
-    if calc.rem(here().page(), 2) == 0 {
-      grid(
-        align: (left, right),
-        columns: (auto, 1fr),
-        [#page-number],
-        [#chapter],
-      )
-    } else {
-      grid(
-        align: (left, right),
-        columns: (1fr, auto),
-        [#subsection],
-        [#page-number],
-      )
-    }
-    line
-  }
-}

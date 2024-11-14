@@ -11,33 +11,33 @@
   #v(10pt)
 
   #text(size: 22pt, strong(affiliation.university))
+  #v(.5em)
 
   #line(length: 100%, stroke: .5pt + rgb("#777777"))
-  #v(-.5em)
 
   #text(size: 14pt, smallcaps(affiliation.department))
 
   #text(size: 12pt, smallcaps(affiliation.degree))
 
-  #v(30pt)
+  #v(50pt)
   #text(size: 19pt, fill: accent-color, strong(title))
 
   #v(20pt)
 
-  #text(size: 14pt, style: "oblique", degree)
+  #smallcaps(text(size: 14pt, style: "oblique", degree))
 
-  #v(40pt)
+  #v(70pt)
 
   #grid(
     columns: (1fr, 1fr),
     align(left)[
-      _ #supervisor-prefix _
+      _#smallcaps(supervisor-prefix)_
 
       #supervisor.name \
       #supervisor.affiliation
     ],
     align(right)[
-      _ #candidate-prefix _
+      _#smallcaps(candidate-prefix)_
 
       #candidate.name \
       #candidate.id
