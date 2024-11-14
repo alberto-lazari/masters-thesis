@@ -127,10 +127,15 @@
       let next_chapters = query(selector(heading.where(level: 1)).after(here()))
       let chapter-opening = next_chapters.len() > 0 and next_chapters.at(0).location().page() == here().page()
       let page-number = counter(page).get().at(0)
-      let chapter = [
-        #numbering("1", counter(heading).get().at(0)).
-        #smallcaps(query(selector(heading.where(level: 1)).before(here())).last().body)
-      ]
+      let chapter = {
+        let title = smallcaps(query(selector(heading.where(level: 1)).before(here())).last().body)
+        // Don't show chapter number for bibliography
+        // TODO: find an elegant solution
+        let number = if title != smallcaps("Bibliography") {
+          numbering("1.", counter(heading).get().at(0))
+        }
+        [#number #title]
+      }
       let subsection = {
         let number = numbering("1.1.", ..counter(heading).get())
         let head = query(selector(heading).before(here(), inclusive: true)).last()
@@ -141,14 +146,24 @@
           }
         }
         // If the header is exactly above a new section write that
-        if after != none and locate(after.location()).position().y < 130pt {
+        let use-after = {
+          if after != none {
+            let position = locate(after.location()).position()
+            position.page == page-number and position.y < 135pt
+          } else {
+            false
+          }
+        }
+        if use-after {
           number = numbering("1.1.", ..counter(heading).at(after.location()))
           head = after
         }
         // Display a heading that is at most nested at level 3
         if head.level > 3 {
-          number = numbering("1.1.", ..counter(heading).get().slice(0, count: 3))
-          head = query(selector(heading.where(level: 3)).before(here(), inclusive: true)).last()
+          head = query(selector(heading).before(here(), inclusive: true))
+            .filter(it => it.level <= 3)
+            .last()
+          number = numbering("1.1.", ..counter(heading).get().slice(0, count: head.level))
         }
         let title = head.body
         let characters
@@ -165,7 +180,10 @@
           text-size -= 0.015em * (characters - 30)
         }
         set text(size: text-size)
-        [#number #smallcaps(head.body)]
+        // Show only if a section or subsection. No need to show the chapter twice
+        if head.level > 1 {
+          [#number #smallcaps(head.body)]
+        }
       }
       let line = {
         v(-.5em)
