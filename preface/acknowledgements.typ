@@ -1,4 +1,4 @@
-#import "../config/translated.typ": acknowledgements
+#import "/util/translated.typ": acknowledgements
 
 #let acknowledgements-bookmark = context [
   #let acknowledgements = acknowledgements.at(text.lang)

@@ -1,4 +1,4 @@
-#import "../config/translated.typ": degree
+#import "/util/translated.typ": degree
 
 #let no-linebreak(body) = {
   show linebreak: none

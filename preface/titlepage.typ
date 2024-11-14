@@ -1,4 +1,4 @@
-#import "/config/translated.typ": *
+#import "/util/translated.typ": *
 
 #let titlepage(affiliation, title, supervisor, candidate, academic-year, accent-color) = page(
   footer: [],

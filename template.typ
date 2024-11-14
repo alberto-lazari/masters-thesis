@@ -1,5 +1,5 @@
-#import "config/printed.typ": pagebreak-to-right, pagebreak-to-left, left-right-margins, printed
-#import "config/header.typ": header, chapter
+#import "util/printed.typ": pagebreak-to-right, pagebreak-to-left, left-right-margins, printed
+#import "util/header.typ": header, chapter
 
 #import "preface/titlepage.typ": titlepage
 #import "preface/copyright.typ": copyright
@@ -77,20 +77,13 @@
     smallcaps(it)
   }
   set outline(depth: 3)
-  show link: it => {
-    set text(fill: accent-color)
+  show link: set text(fill: accent-color)
+  show raw: set text(font: "Menlo")
+  show figure: it => {
+    v(.5em)
     it
+    v(.5em)
   }
-  show raw: it => {
-    set text(font: "Menlo")
-    it
-  }
-  // Add background to monospace text
-  show raw.where(block: true): block.with(
-    fill: luma(235),
-    inset: 10pt,
-    radius: 10pt,
-  )
 
   {
     set heading(numbering: none)
