@@ -275,5 +275,6 @@ The limitations are bypassed by using a library that is able to disable the bloc
 To avoid extensive use of reflection---which requires much boilerplate---VirtualApp provides a set of mirror classes that replicate Android platform classes,
 exposing hidden APIs and fields accessible for the framework's functionality.
 
+// TODO
 == Permission Model
 - Description and evolution
