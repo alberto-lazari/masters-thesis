@@ -2,10 +2,10 @@
 
 = Securing the Virtual Apps <implementation>
 == Preliminary Work
-Before actually introducing the virtual permission model some preliminary work had to be addressed.
+Before actually introducing the virtual permission model, some preliminary work had to be addressed.
 VirtualXposed has been currently updated to support Android versions up to Android 12, on its official open-source repository,
 with a release called "Initial support for Android 12".
-Parallel to this work, another developer worked on updating VirtualXposed to the same Android version in a personal fork.
+At the same time, a developer working on a personal fork of VirtualXposed also independently updated it to Android 12.
 Both of these VirtualXposed versions had compatibility issues, but were complementary in some areas.
 A merge of these two took the best of both worlds, applying fixes to one version that were developed in the other.
 This created a starting point, where VirtualXposed had a decent Android 12 support, compared to older versions.
@@ -208,7 +208,7 @@ Examples of typical fixes are the following:
 
   An example of this issue, as shown in @parameter_add,
   is the introduction of the `deviceId` parameter in `android.app.ClientTransactionHandler.handleLaunchActivity`.
-  #code(caption: [Code snippet that includes the `SigningDetails` update.])[
+  #code(caption: [`handleLaunchActivity` method signature change.])[
     #set text(.99em)
     ```java
     public abstract Activity handleLaunchActivity(ActivityThread.ActivityClientRecord r,
@@ -219,9 +219,80 @@ Examples of typical fixes are the following:
     ```
   ] <parameter_add>
 
+// TODO
 === Build System Update
+- Compilation fixes
+- Support for latest Java language features
+- Gradle upgrade, to support more recent versions of libraries
+- Switch to androidx APIs
+- Library disappeared from maven repositories embedded in the project
 
-=== Multi-user Compatible UID System
+=== Multi-User UID System
+One of the main features of VirtualApp is the possibility to install multiple copies of a same application.
+The framework's original implementation did not assign cloned apps a dedicated UID.
+Instead, a same app would always have the same UID,
+even when installed under a different virtual user.
+While this design worked fine for VirtualApp itself,
+since it did not actively use them,
+it was a limit for implementing the virtual permission model.
+Permissions in Android are managed by UID,
+so without unique UIDs, an app's permissions would be managed the same across all users,
+preventing to handle permission based on the current virtual user.
+
+In order to address this, the UID system in VirtualApp was updated to reflect Android multi-user support approach.
+When multi-user is enabled in the Android system,
+each installed app is assigned an application-specific UID in the range 10000-19999 @app_uid,
+which is then composed with the current user ID to form its actual UID.
+The range of UIDs assigned per user is 100000 @per_user_range,
+which means that the final UID is composed as
+$"userId" times 100000 + "appId"$.
+For example, the app with UID 10005 would have the same UID for the default user (user 0),
+but instead, user 2 would see it with UID 210005.
+This is conveniently done in the hidden API method
+#raw(lang: "java", "public static int getUid(int userId, int appId)") of the class `android.os.UserHandle`,
+which VirtualApp provides as visible in its `VUserHandle` class.
+
+The change was introduced in the #raw(lang: "java", "int getOrCreateUid()") method of `com.lody.virtual.server.am.UidSystem`,
+as shown in @old_uid_system and @new_uid_system.
+
+#code(caption: [Old VirtualApp UID creation method.])[
+  ```java
+  public int getOrCreateUid(VPackage pkg) {
+      String sharedUserId = pkg.mSharedUserId;
+      if (sharedUserId == null) {
+          sharedUserId = pkg.packageName;
+      }
+      Integer uid = mSharedUserIdMap.get(sharedUserId);
+      if (uid != null) {
+          return uid;
+      }
+      int newUid = ++mFreeUid;
+      mSharedUserIdMap.put(sharedUserId, newUid);
+      save();
+      return newUid;
+  }
+  ```
+] <old_uid_system>
+#code(caption: [New VirtualApp UID creation method for multi-user system.])[
+  ```java
+  public int getOrCreateUid(int userId, VPackage pkg) {
+      String packageName = pkg.mSharedUserId;
+      if (packageName == null) {
+          packageName = pkg.packageName;
+      }
+      // Get existing application UID for package name
+      Integer appId = mPackageUidMap.get(packageName);
+      if (appId == null) {
+          // Create new application UID
+          appId = ++mFreeUid;
+          mPackageUidMap.put(packageName, appId);
+          save();
+      }
+      // Return actual UID for current user
+      return VUserHandle.getUid(userId, appId);
+  }
+  ```
+] <new_uid_system>
 
 == Design
 === General Permission Model

@@ -251,7 +251,7 @@ To address this issue,
 VirtualApp performs a redirection at a file system level and manages virtual UIDs.
 
 For file system-related operations,
-it uses native hooks to intercept system calls to low-level functions, such as `open()` and `fd()`,
+it uses native hooks to intercept system calls to low-level functions, such as `open()` and `fcntl()`,
 and modifies file paths to redirect them to isolated storage locations, managed by `VEnvironment`.
 Each plugin app is assigned a unique private folder inside the container's data folder,
 ensuring they do not conflict or access each other's data.
@@ -272,9 +272,21 @@ the proxy ensures that the container's UID is properly used.
 Supporting virtualization requires an extensive use of hidden APIs,
 which have been restricted to normal apps by Android's SDK policies, starting with Android 9.
 The limitations are bypassed by using a library that is able to disable the block and allow these APIs to be called via reflection.
-To avoid extensive use of reflection---which requires much boilerplate---VirtualApp provides a set of mirror classes that replicate Android platform classes,
+To avoid extensive use of reflection---which requires much boilerplate code---VirtualApp provides a set of mirror classes that replicate Android platform classes,
 exposing hidden APIs and fields accessible for the framework's functionality.
 
 // TODO
 == Permission Model
-- Description and evolution
+=== Motivation
+What are permissions used for?
+
+=== Permissions Declaration
+- Declaration in manifest
+- Install-time permissions
+
+=== Runtime Permissions
+- Runtime request
+- Permission groups
+- Permission dialog
+- `shouldShowRequestPermissionRationale` and fixed denials
+- Edge cases
