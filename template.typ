@@ -61,7 +61,7 @@
     first-line-indent: 1em,
     spacing: .7em,
   )
-  set list(spacing: 1em)
+  set list(spacing: 1em, marker: ([•], [◦], [--]))
   show list: it => {
     v(.2em)
     it

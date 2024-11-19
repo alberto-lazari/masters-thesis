@@ -140,6 +140,7 @@ It is configured with custom Security-Enhanced Linux (SELinux) policies,
 to enforce mandatory access control (MAC) over all processes @selinux.
 
 == VirtualXposed
+// TODO: images?
 === Project Overview
 The original Xposed framework is a powerful tool designed for rooted Android devices
 that allows users to modify and customize system behavior at a deep level.
@@ -178,12 +179,13 @@ This currently allows VirtualXposed to provide a functional, pre-configured appl
 removing the need for specific manual setup.
 
 === VirtualApp Architecture
+// TODO: diagram?
 By looking at the structure of VirtualXposed's project,
 the code is divided in three Gradle projects:
 - `:app` is the UI part of the application,
   declaring activities and core components that interact with the virtualization framework.
 - `:launcher` is a fork of a AOSP-like launcher, adapted to be included in the application.
-- `:lib` is the actual VirtualApp framework.
+- `:lib` is the actual VirtualApp framework, back-end of the application.
 
 This section explores the high-level architecture of the `:lib` project,
 highlighting the purpose of components that are relevant for the following chapters.
@@ -274,19 +276,3 @@ which have been restricted to normal apps by Android's SDK policies, starting wi
 The limitations are bypassed by using a library that is able to disable the block and allow these APIs to be called via reflection.
 To avoid extensive use of reflection---which requires much boilerplate code---VirtualApp provides a set of mirror classes that replicate Android platform classes,
 exposing hidden APIs and fields accessible for the framework's functionality.
-
-// TODO
-== Permission Model
-=== Motivation
-What are permissions used for?
-
-=== Permissions Declaration
-- Declaration in manifest
-- Install-time permissions
-
-=== Runtime Permissions
-- Runtime request
-- Permission groups
-- Permission dialog
-- `shouldShowRequestPermissionRationale` and fixed denials
-- Edge cases

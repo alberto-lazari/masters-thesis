@@ -32,6 +32,7 @@
     "introduction",
     "background",
     "related-work",
+    "permission-model",
     "implementation",
     "evaluation",
     "discussion",

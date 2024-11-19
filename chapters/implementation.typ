@@ -295,9 +295,10 @@ as shown in @old_uid_system and @new_uid_system.
 ] <new_uid_system>
 
 == Design
-=== General Permission Model
+=== Virtual Permission Model
 - Inspired by Android real model, but simplified
 - Install-time permissions: why they need to be managed
+
 === Runtime Permissions
 - Android implementation details
 - My implementation
