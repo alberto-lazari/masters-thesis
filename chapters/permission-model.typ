@@ -109,6 +109,8 @@ the behavior of permission groups makes permission dialogs more closely tied to 
 This happens because permission dialogs are promoted when permission groups are unset.
 To reflect this, the dialog display the permission group's icon and description,
 
+// TODO: group tracking disappeared in Android 11
+
 === Edge Cases
 Since the permission dialog hides some complexity of the underlying permission model,
 certain permissions and states combinations arise some peculiarities:
@@ -179,10 +181,12 @@ and storing and managing the status of permissions.
 This architecture is taken as an inspiration for the virtual permission model,
 described in later chapters.
 
-=== Main Components
-#figure(caption: [Simplified architecture of the main components of the permission model.])[
-  #image("/images/permission-model.svg")
-]
+
+=== Main Classes <main_classes>
+#figure(
+  caption: [Simplified architecture of the permission model's classes.],
+  image("/images/permission-model.svg")
+) <classes_diagram>
 
 Until Android 6, permission handling was managed directly by the `PackageManager` service.
 Since permissions were only granted at install-time,
@@ -191,10 +195,12 @@ With the introduction of runtime permissions, however,
 permission management became more complex,
 requiring it to be split between multiple dedicated components.
 
-The following subsections describe the main components involved in the current Android permission system,
-highlighting each component's responsibilities and interactions with the others.
+The following subsections describe the main classes involved in the current Android permission system,
+as shown in @classes_diagram.
+Each class is analyzed with respect to its responsibilities and interactions with other components,
+providing a comprehensive---although simplified---view of how the system operates.
 
-// TODO: Code references?
+// TODO: code references?
 ==== `PermissionManager`
 It is the main service interface for permission management.
 As a central access point,
@@ -313,3 +319,86 @@ Its main responsibilities are:
   The grant status of all permissions inside of it has to be updated and managed correctly.
 - Auto-revoke mechanism: it also implements the auto-revoke of permissions,
   for apps that were not being used for an extended period of time.
+
+
+=== Functional Components
+#figure(
+  caption: [The functional components and their interactions.],
+  image("/images/permission-components.svg")
+) <components_diagram>
+
+The architecture described in @main_classes, even while being a simplification,
+contains several details that may be complex to keep in mind.
+It may be useful to categorize the individual classes into higher-level logical components,
+based on the different functional roles that can be found in the model.
+
+==== Management Core
+It provides a centralized control for querying and modifying the state of permissions.
+It serves as the primary interface for all permission-related operations
+and acts as the entry point for other system services and applications to interact with the permission model.
+Typical operations it should implement are:
+- Checking permission status for specific permissions, UIDs, or users.
+- Granting or revoking permissions and manage their flags.
+- Retrieving metadata about permissions or permission groups.
+
+It is implemented in:
+- `PermissionManager`.
+- `PermissionManagerService`.
+- `PermissionManagerServiceImpl`.
+
+==== State Model
+It defines the in-memory representation of permission data.
+It provides the foundation for managing and manipulating permission states.
+The data structures in this component reflect the hierarchy and relationships within the permission system,
+and should:
+- Track individual permissions, including their grant status and flags.
+- Manage the state of permissions associated with specific UIDs.
+- Aggregate UID-level states for each user in the system.
+- Support multi-user environments by handling permission data for each user.
+
+It is implemented in:
+- `PermissionState`.
+- `RuntimePermissionState`.
+- `UidPermissionState`.
+- `UserPermissionState`.
+- `DevicePermissionState`.
+
+==== State Persistence
+It maintains a persistent record of permission states across system reboots by:
+- Storing permission states in user-specific files.
+- Loading permission data during system initialization.
+- Writing updates to the storage layer whenever permissions are updated.
+
+It is implemented in:
+- `RuntimePermissionsPersistence`.
+- `RuntimePermissionsPersistenceImpl`.
+- `RuntimePermissionPersistenceImpl`.
+- The `runtime-permissions.xml` file.
+
+==== Policy Engine
+It is the decision-making layer, enforcing rules and constraints on permission operations,
+and ensuring that all actions are aligned with system policies and security requirements.
+
+It needs to implement the logic closer to user interactions,
+such as group-based constraints for granting and revoking permissions.
+
+It is implemented in the `PermissionController`,
+more specifically in its service.
+
+==== User Interaction Layer
+This layer fills the gap between the permission system and the user.
+It handles user-facing operations,
+ensuring that the system is able to communicate permission requirements and decisions clearly.
+
+Its main use-case is presenting permission request dialogs to users,
+following a group-based permission logic, and managing their input.
+
+It is implemented in the `GrantPermissionsActivity` of the `PermissionController` module.
+
+==== Registry
+It maintains a catalog of all known permissions and their attributes,
+providing metadata about each permission and supporting querying operations needed by other components.
+
+This component is not explored in detail,
+since the virtual permission model is able to re-use Android's implementation,
+so a deep understanding is not needed.

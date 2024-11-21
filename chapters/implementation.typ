@@ -219,7 +219,7 @@ Examples of typical fixes are the following:
     ```
   ] <parameter_add>
 
-// TODO
+// TODO: build system update
 === Build System Update
 - Compilation fixes
 - Support for latest Java language features
@@ -294,8 +294,8 @@ as shown in @old_uid_system and @new_uid_system.
   ```
 ] <new_uid_system>
 
-== Design
-=== Virtual Permission Model
+== Virtual Permission Model
+=== Logical Components
 - Inspired by Android real model, but simplified
 - Install-time permissions: why they need to be managed
 
@@ -304,10 +304,6 @@ as shown in @old_uid_system and @new_uid_system.
 - My implementation
 - Permission dialog
 - Host permissions management
-=== Implementation Peculiarities
-- Override individual runtime permissions (with respect to its group)
-- Install-time permissions could be revoked (no settings for that though)
-- Dialog is not always a perfect replica (location, background permissions, ...)
 
 == Implementation
 === Architecture
@@ -315,6 +311,10 @@ as shown in @old_uid_system and @new_uid_system.
 - `VPermissionManager`
 - Dialog
 - Settings activities
+=== Implementation Peculiarities
+- Override individual runtime permissions (with respect to its group)
+- Install-time permissions could be revoked (no settings for that though)
+- Dialog is not always a perfect replica (location, background permissions, ...)
 === Replace System Manager With Custom Implementation
 ==== Technical Solutions
 Different methods:

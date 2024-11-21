@@ -150,7 +150,7 @@ It is configured with custom Security-Enhanced Linux (SELinux) policies,
 to enforce mandatory access control (MAC) over all processes @selinux.
 
 == VirtualXposed
-// TODO: images?
+// TODO: app screenshots
 === Project Overview
 The original Xposed framework is a powerful tool designed for rooted Android devices
 that allows users to modify and customize system behavior at a deep level.
@@ -189,7 +189,7 @@ This currently allows VirtualXposed to provide a functional, pre-configured appl
 removing the need for specific manual setup.
 
 === VirtualApp Architecture
-// TODO: diagram?
+// TODO: vrtualapp architecture diagram
 By looking at the structure of VirtualXposed's project,
 the code is divided in three Gradle projects:
 - `:app` is the UI part of the application,

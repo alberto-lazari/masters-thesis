@@ -24,7 +24,7 @@
     if after != none {
       let position = locate(after.location()).position()
       let page-number = counter(page).get().at(0)
-      position.page == page-number and position.y < 135pt
+      counter(page).at(after.location()).at(0) == page-number and position.y < 135pt
     } else {
       false
     }
