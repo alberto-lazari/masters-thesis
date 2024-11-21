@@ -80,18 +80,6 @@ The sandbox is guaranteed by these concepts:
 +	Permission model: Android enforces a fine-grained permission model that controls access to specific system resources and data.
   Permissions are granted based on the app UID and GID.
 
-==== System Layer
-The System layer includes essential system applications and services that manage core functionalities of the OS,
-such as telephony, location and media.
-These components are granted elevated permissions and provide services that user apps rely on but cannot directly access.
-
-Examples of key system services include the Location Manager, Telephony Manager, Notification Manager.
-Each service provides standardized APIs for apps to access sensitive resources,
-often locking them with a permission.
-
-System apps are regular apps that come pre-installed with the system image and can be granted system permissions @privileged_permissions.
-They are installed under a read-only directory, to avoid deletion and modification.
-
 ==== Java API Framework
 This layer provides a set of APIs that enables third-party applications to
 handle UI elements, manage application lifecycles, and control interactions between applications and system services.
@@ -102,6 +90,28 @@ Starting with Android 9, however,
 the framework introduced a separation between SDK and non-SDK interfaces through the hidden APIs list @hidden_apis.
 This created a gap between the capabilities of system applications and those available to third-party applications,
 restricting access to certain internal features.
+
+==== System Layer
+The System layer includes essential system applications and services that manage core functionalities of the OS,
+such as telephony, location and media.
+These components are granted elevated permissions and provide services that user apps rely on but cannot directly access.
+
+- Services:
+  examples of key system services include the Location Manager, Telephony Manager, Notification Manager.
+  They expose their functionalities using interfaces in the framework API,
+  often granting controlled access to sensitive resources that are restricted behind specific permissions.
+  The actual implementation resides in system components that live in their own elevated process.
+
+  While service interfaces are usually defined in `android.*` packages,
+  their implementation are placed under `com.android.server.*` packages.
+  This separation is even more evident in the file system structure of the source files,
+  where services have their source code organized in a dedicated `services/` directory tree,
+  which puts emphasis on the fact that they are components of the system,
+  and not part of the Android framework API directly.
+
+- System apps:
+  they are regular apps that come pre-installed with the system image and can be granted system permissions @privileged_permissions.
+  They are installed under a read-only directory, to avoid deletion and modification.
 
 ==== Binder Mechanism
 The Binder mechanism is Android’s core inter-process communication (IPC) system,
@@ -234,6 +244,7 @@ with proxies automatically generated from Android Interface Definition Language 
 In the Android Framework, for example,
 the `ActivityManager` service provides its functionalities by redirecting method calls to the `IActivityManager` interface,
 which is actually implemented in the `ActivityManagerService`.
+
 To ensure that plugin apps can work within the virtual environment,
 VirtualApp injects its dynamic proxies into plugin apps processes,
 replacing system implementations with the framework versions.

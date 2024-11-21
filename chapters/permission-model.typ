@@ -1,4 +1,6 @@
-= Android Permission Model
+#import "/util/common.typ": *
+
+= Android Permission Model <permission_model>
 The Android permission model is designed to protect user privacy and security,
 preventing apps from freely accessing sensitive information about the user or the device.
 It controls access to resources and features that extend beyond the app's sandbox,
@@ -121,18 +123,18 @@ certain permissions and states combinations arise some peculiarities:
   In this scenario,
   Android neither marks the permission as "denied once" nor permanently denied,
   meaning that dismissing the dialog repeatedly will not lead to a fixed denial.
-  As a result, `shouldShowRequestPermissionRationale` returns `false`,
+  As a result, `shouldShowRequestPermissionRationale()` returns `false`,
   which might mislead the app into interpreting this as if the permission dialog was never shown in the first place.
 - Detecting fixed denials:
-  the combination of `checkPermission`---method that determines whether a permission is granted---and `shouldShowRequestPermissionRationale` is the only way for third-party developers to infer permission statuses,
+  the combination of `checkPermission()`---method that determines whether a permission is granted---and `shouldShowRequestPermissionRationale()` is the only way for third-party developers to infer permission statuses,
   because internal permission APIs are not accessible to normal apps.
   However, these methods alone are insufficient for deducing a permission's exact state,
   particularly for fixed denials:
   where a user has permanently denied the permission.
   This is a useful information,
   that an app may want to use to inform the user that it cannot request the permission anymore.
-  In such cases, `checkPermission` returns `PERMISSION_DENIED`,
-  while `shouldShowRequestPermissionRationale` returns `false`.
+  In such cases, `checkPermission()` returns `PERMISSION_DENIED`,
+  while `shouldShowRequestPermissionRationale()` returns `false`.
   Unfortunately, this combination can also occur if a user dismissed the dialog without explicitly denying the permission,
   leaving the app unable to differentiate between a permanent denial and a dialog dismiss.
 
@@ -162,11 +164,135 @@ Analyzing these behaviors is essential for understanding how Android's permissio
 This analysis was also useful for developing a consistent behavior for the virtual permission model,
 that is presented in later chapters.
 
-// TODO: architecture
 == Implementation
-=== Components
-==== `PermissionService`
-==== `PermissionFlags`
-==== `UidPermissionPolicy`
-==== `UidPermissionPersistence`
-==== `PermissionController` and `GrantPermissionsActivity`
+As discussed in previous sections,
+the Android permission model is inherently complex---not only due to the intricate edge cases it has to address---but also because it needs to provide robust,
+system-level security features to protect sensitive resources.
+Additionally, with many updates and refinements over time,
+the model's implementation has grown into a large, continually evolving architecture,
+spread between multiple components and deep layers.
+
+The following analysis is focused on understanding the model architecture at a higher level,
+by identifying the main components that have an active role in the logic behind permission checking,
+how runtime permissions are requested,
+and storing and managing the status of permissions.
+This architecture is taken as an inspiration for the virtual permission model,
+described in later chapters.
+
+=== Main Components
+// TODO: architecture diagram
+Until Android 6, permission handling was managed directly by the `PackageManager` service.
+Since permissions were only granted at install-time,
+a single, centralized manager was sufficient.
+With the introduction of runtime permissions, however,
+permission management became more complex,
+requiring it to be split between multiple dedicated components.
+
+The following subsections describe the main components involved in the current Android permission system,
+highlighting each component's responsibilities and interactions with the others.
+
+// TODO: Code references?
+==== `PermissionManager`
+It is the main service interface for permission management.
+As a central access point,
+it provides high-level methods for managing permissions and is the entry point for applications and other services needing permission information or status updates.
+While normal apps cannot directly access most of its APIs,
+all permission-related operations are handled by this service at some point in the call stack,
+sometimes called by publicly accessible methods in `Context` or `Activity`,
+such as `checkSelfPermission()` and `requestPermissions()`.
+
+`PermissionManager` was created to support the more complex needs of runtime permissions,
+shifting permission handling from the `PackageManager` service.
+As all Android services, it is implemented in a separate `PermissionManagerService` class,
+which allows modular implementations by relying on a specialized `PermissionManagerServiceInterface` interface,
+stored in the `mPermissionManagerServiceImpl` private field.
+
+==== `PermissionManagerServiceImpl`
+This is the underlying class implementing the detailed permissions logic exposed in `PermissionManagerService`.
+It has direct access to the current internal state of all permissions in its `mState` field.
+The state is modeled with multiple hierarchical classes:
+- `PermissionState`: stores the current grant status and flags associated with a specific permission.
+  It also provides methods to perform direct operations on the permission,
+  such as `grant()`, `revoke()`, and `updateFlags()`.
+- `UidPermissionState`: groups the state of permissions associated with a specific UID,
+  and provides methods to interact with it,
+  such as `getGrantedPermissions()` and `revokePermission()`.
+- `UserPermissionState`: organizes the `UidPermissionState` instances for all applications installed under a specific user.
+- `DevicePermissionState`: tracks the `UserPermissionState` associated with each user on the system.
+
+The `DevicePermissionState` owned by `PermissionManagerServiceImpl` is initialized during boot via the `restorePermissionState()` method,
+loading stored permission data.
+
+This class also owns an internal connection with user and package managers,
+to handle permissions in multi-user environments,
+and retrieve information about installed packages and their declared permissions.
+
+Additionally, its `mRegistry` field manages an internal storage of information about all known permissions in the system and their related settings.
+
+==== RuntimePermissionsPersistenceImpl
+Its the latest implementation responsible for managing runtime permission data persistence.
+It is part of the `PermissionController` Android Pony EXpress (APEX) module that focuses exclusively on permission management,
+and is responsible for reading and writing the state of a user's permissions its `runtime-permissions.xml` file.
+
+While legacy code is still present across the framework,
+where permissions were handled by internal components using hidden APIs,
+this newer approach moves the functionality into a specialized module that can be upgraded independently from the system @permission_controller.
+`RuntimePermissionsPersistenceImpl` specifically takes care of the actual parsing and serialization of the XML files that store permissions data for each user.
+The files group every permission requested by apps installed by a user,
+specifying the grant status and additional flags.
+They not only group runtime permissions, as the file name implies, but also install-time ones.
+@permission_xml provides an example where the Internet and NFC permissions are stored,
+which are normal permissions.
+
+#code(caption: [Example of a permission XML file.])[
+  #set text(size: .9em)
+  ```xml
+  <!-- /data/misc_de/$userId/apexdata/com.android.permission/runtime-permissions.xml -->
+  <?xml version='1.0' encoding='UTF-8' standalone='yes' ?>
+  <runtime-permissions version="10" >
+    <package name="com.example.testapp" >
+      <permission name="android.permission.ACCESS_FINE_LOCATION" granted="false" flags="300" />
+      <permission name="android.permission.BODY_SENSORS" granted="false" flags="301" />
+      <permission name="android.permission.INTERNET" granted="true" flags="0" />
+      <permission name="android.permission.ACCESS_COARSE_LOCATION" granted="true" flags="80301" />
+      <permission name="android.permission.CALL_PHONE" granted="false" flags="300" />
+      <permission name="android.permission.WRITE_CONTACTS" granted="false" flags="300" />
+      <permission name="android.permission.NFC" granted="true" flags="0" />
+      <permission name="android.permission.CAMERA" granted="true" flags="301" />
+      <permission name="android.permission.RECORD_AUDIO" granted="false" flags="300" />
+      <permission name="android.permission.READ_CONTACTS" granted="true" flags="301" />
+    </package>
+    <!-- Other packages... -->
+  </runtime-permissions>
+  ```
+] <permission_xml>
+
+While it is clear that this class provides APIs to interact with the permission persistence management,
+it is not a trivial task to identify a link between the persistence and the logic implemented in `PermissionManagerServiceImpl`.
+No explicit call to any component related to persistence can be found in the framework internals.
+
+==== `PermissionController`
+This is the module dedicated to managing permissions-related UI interactions and system logic.
+It is the main component addressing user-centric tasks,
+regarding the granting process and permission policies in general.
+Its main responsibilities are:
+- Managing permission requests:
+  this is done mainly in the `GrantPermissionsActivity`,
+  which is the one creating the dialogs presented to users when applications request runtime permissions.
+  Its purpose is to bridge the interaction between apps and the permission model,
+  handling user inputs and interact with the model accordingly.
+- Permission granting and group logic:
+  it handles the granting logic,
+  especially for runtime permissions within groups.
+  When handling a permission request,
+  it checks whether a permission in the same group is already granted.
+  If not, it manages the change in the permission state.
+- Group revoking:
+  A specific case to manage for permission groups is the possibility for them to be revoked.
+  When revoking a permission,
+  the module has to extend the operation to all other permissions in the group.
+  It is also possible to revoke a group directly from the settings.
+  The grant status of all permissions inside of it has to be updated and managed correctly.
+- Auto-revoke mechanism:
+  it also implements the auto-revoke of permissions,
+  for apps that were not being used for an extended period of time.
