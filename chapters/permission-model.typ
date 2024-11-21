@@ -180,7 +180,10 @@ This architecture is taken as an inspiration for the virtual permission model,
 described in later chapters.
 
 === Main Components
-// TODO: architecture diagram
+#figure(caption: [Simplified architecture of the main components of the permission model.])[
+  #image("/images/permission-model.svg")
+]
+
 Until Android 6, permission handling was managed directly by the `PackageManager` service.
 Since permissions were only granted at install-time,
 a single, centralized manager was sufficient.
@@ -198,7 +201,7 @@ As a central access point,
 it provides high-level methods for managing permissions and is the entry point for applications and other services needing permission information or status updates.
 While normal apps cannot directly access most of its APIs,
 all permission-related operations are handled by this service at some point in the call stack,
-sometimes called by publicly accessible methods in `Context` or `Activity`,
+sometimes called to provide control over the permission state to publicly accessible methods in `Context` or `Activity`,
 such as `checkSelfPermission()` and `requestPermissions()`.
 
 `PermissionManager` was created to support the more complex needs of runtime permissions,
@@ -230,15 +233,16 @@ and retrieve information about installed packages and their declared permissions
 Additionally, its `mRegistry` field manages an internal storage of information about all known permissions in the system and their related settings.
 
 ==== RuntimePermissionsPersistenceImpl
-Its the latest implementation responsible for managing runtime permission data persistence.
+It is the latest implementation responsible for managing runtime permission data persistence.
 It is part of the `PermissionController` Android Pony EXpress (APEX) module that focuses exclusively on permission management,
-and is responsible for reading and writing the state of a user's permissions its `runtime-permissions.xml` file.
+and is responsible for reading and writing the state of a user's permissions in its `runtime-permissions.xml` file.
 
 While legacy code is still present across the framework,
 where permissions were handled by internal components using hidden APIs,
 this newer approach moves the functionality into a specialized module that can be upgraded independently from the system @permission_controller.
 `RuntimePermissionsPersistenceImpl` specifically takes care of the actual parsing and serialization of the XML files that store permissions data for each user.
-The files group every permission requested by apps installed by a user,
+
+The permissions files group every permission requested by apps installed by a user,
 specifying the grant status and additional flags.
 They not only group runtime permissions, as the file name implies, but also install-time ones.
 @permission_xml provides an example where the Internet and NFC permissions are stored,
@@ -267,32 +271,45 @@ which are normal permissions.
   ```
 ] <permission_xml>
 
-While it is clear that this class provides APIs to interact with the permission persistence management,
-it is not a trivial task to identify a link between the persistence and the logic implemented in `PermissionManagerServiceImpl`.
-No explicit call to any component related to persistence can be found in the framework internals.
+`RuntimePermissionsPersistenceImpl` exposes its features in two public methods:
++ #raw(lang: "d", "RuntimePermissionsState readForUser(UserHandle user)").
++ #raw(lang: "d", "void writeForUser(RuntimePermisionsState runtimePermissions, UserHandle user)").
+
+==== `Settings`
+The class dedicated to store system dynamic settings also acts as a link between the `PermissionController` module and system framework APIs.
+It does so by storing a reference of the `RuntimePermissionsPersistence` and wrapping it in an internal `RuntimePermissionPersistence`
+(note the missing 's').
+This internal persistence manager defines APIs to interact with the actual `PermissionController` persistence,
+most notably the `readStateForUserSync()` and `writeStateForUserAsync()`.
+These are exposed in the `Settings` class in the methods:
+- `readLPw()`: reads the entire settings for each user,
+  including their permissions state.
+  It is called once by `PackageManagerService` in its constructor,
+  meaning that the file seems to be read once during the services initialization phase.
+  Once the permissions state is loaded into memory it is managed there and, eventually,
+  it will be written back to file as updates occur.
+- `writePermissionStateForUserLPr()`: writes the permissions state of a specific user.
+  It is called by the `PackageManagerService` method `writePermissionSettings()`,
+  which, in turn, is called from `PermissionManagerServiceImpl` via its `onPermissionUpdated()` callback whenever a permission is modified.
 
 ==== `PermissionController`
 This is the module dedicated to managing permissions-related UI interactions and system logic.
 It is the main component addressing user-centric tasks,
 regarding the granting process and permission policies in general.
 Its main responsibilities are:
-- Managing permission requests:
-  this is done mainly in the `GrantPermissionsActivity`,
+- Managing permission requests: this is done mainly in the `GrantPermissionsActivity`,
   which is the one creating the dialogs presented to users when applications request runtime permissions.
   Its purpose is to bridge the interaction between apps and the permission model,
   handling user inputs and interact with the model accordingly.
-- Permission granting and group logic:
-  it handles the granting logic,
+- Permission granting and group logic: it handles the granting logic,
   especially for runtime permissions within groups.
   When handling a permission request,
   it checks whether a permission in the same group is already granted.
   If not, it manages the change in the permission state.
-- Group revoking:
-  A specific case to manage for permission groups is the possibility for them to be revoked.
+- Group revoking: a specific case to manage for permission groups is the possibility for them to be revoked.
   When revoking a permission,
   the module has to extend the operation to all other permissions in the group.
   It is also possible to revoke a group directly from the settings.
   The grant status of all permissions inside of it has to be updated and managed correctly.
-- Auto-revoke mechanism:
-  it also implements the auto-revoke of permissions,
+- Auto-revoke mechanism: it also implements the auto-revoke of permissions,
   for apps that were not being used for an extended period of time.
