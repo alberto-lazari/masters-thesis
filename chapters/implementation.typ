@@ -98,7 +98,7 @@ Most of the times, these crashes were caused by changes in the signature of meth
 such as new parameters being introduced, or their type changed.
 Examples of typical fixes are the following:
 - Field type change: the update to Android 14 changed the type of the private field
-  `android.content.IntentFilter.mActions` from `java.lang.ArrayList` to `android.util.ArraySet`.
+  `mActions` of `IntentFilter` from `java.lang.ArrayList` to `android.util.ArraySet`.
   This change required to introduce some code forking into existing functions.
   #code(caption: [Existing implementation of a method in the framework.])[
     ```java
@@ -254,10 +254,10 @@ $"userId" times 100000 + "appId"$.
 For example, the app with UID 10005 would have the same UID for the default user (user 0),
 but instead, user 2 would see it with UID 210005.
 This is conveniently done in the hidden API method
-#raw(lang: "java", "public static int getUid(int userId, int appId)") of the class `android.os.UserHandle`,
+#raw(lang: "java", "public static int getUid(int userId, int appId)") of the class `UserHandle`,
 which VirtualApp provides as visible in its `VUserHandle` class.
 
-The change was introduced in the #raw(lang: "java", "int getOrCreateUid()") method of `com.lody.virtual.server.am.UidSystem`,
+The change was introduced in the `getOrCreateUid()` method of `UidSystem`,
 as shown in @old_uid_system and @new_uid_system.
 
 #code(caption: [Old VirtualApp UID creation method.])[
@@ -299,16 +299,126 @@ as shown in @old_uid_system and @new_uid_system.
   ```
 ] <new_uid_system>
 
-== Virtual Permission Model
-=== Logical Components
-- Inspired by Android real model, but simplified
-- Install-time permissions: why they need to be managed
+== Design
+The virtual model retains Android's permission model's key, high-level components outlined in @functional_components,
+with some adjustments to adapt them to a simpler---smaller in scope---implementation in a virtual environment.
+These are present because the system's implementation has to address many system-level access cases,
+where apps might want to perform tasks that require them to be granted elevated permissions,
+or elevated users might try to access protected resources,
+needing a different treatment than normal ones.
+VirtualApp, operating in the normal user space,
+has not access to privileged resources in the first place,
+thus it is not required to address these edge cases.
 
+The main difference with the system's model is the _policy engine_ not being centralized.
+Since its logic is simpler, it is distributed across different components.
+Some responsibilities are included in user interaction and the management core,
+while certain elements are directly embedded into the state model.
+
+It is also worth noting that the _registry_ component is mostly publicly accessible using Android APIs,
+making a full re-implementation is unnecessary.
+Instead, only few specific aspects of the registry are included inside the _management core_ and _state model_,
+to address the limited specific needs required by the virtual model.
+
+The following subsections detail the design requirements for each component.
+
+=== State Model Component
+It defines the data structures needed to store and manage permission-related information.
+It supports three key aspects of permissions: install-time permissions, runtime permissions, and permission groups.
+State is managed differently, based on their type.
+
+Additionally, permissions are organized in a hierarchy to group them under multiple UIDs and users.
+
+==== Install-time permissions
+They have a simple, binary state:
+they either are granted or not.
+These permissions are typically static,
+reflecting whether they were approved at the time of installation,
+but, they could also theoretically support updates.
+This is aligned with Android's approach,
+since information about install-time permissions is stored alongside runtime permissions in the `runtime-permissions.xml` file,
+making status changes theoretically possible if needed.
+
+Beyond the basic granted/not-granted status, no additional metadata is required for their management.
+
+==== Runtime Permissions
+They are more complex,
+requiring the state model to store detailed information about their current status and history of changes.
+
+The possible states for a runtime permission are:
+- Unrequested (default): the permission has not been requested by the application.
+
+- Granted: the permission has been permanently granted and will not be requested again, 
+  unless the user explicitly changes its status from the settings.
+  Auto-revoking permissions are not addressed in the virtual model.
+
+- Denied once: the user rejected the last permission request,
+  or explicitly denied it---or its group---from the settings.
+  The next permission request will still prompt a permission request dialog.
+
+- Permanently denied: after being denied once,
+  the permission request has been rejected again.
+  Further requests will not prompt a permission request dialog,
+  unless the user explicitly changes its status from the settings.
+
+- Always ask (not granted): the permission has been granted once in another session,
+  or it has been set as _always ask_ from the settings.
+
+- Always ask (granted for current execution): the permission is granted for the current session,
+  but will need to be requested again in the future.
+
+Additional details for runtime permissions have to be addressed:
+- The _denied once_ status has to be reset when permissions transition to a more permissive status,
+  like _always ask_ or _granted_.
+
+- The _granted once_ status, assigned when a permission that is set to _always ask_ is granted for the current session,
+  has to be reset between different app executions and when transitioning between other states.
+
+==== Permission groups
+They reference multiple runtime permission records and are used to reduce the dependency from Android register APIs.
+Their possible state can be:
+- Unrequested (default): none of the permissions in the group have been set.
+  Permissions could have been denied once, though.
+
+- Granted: a permission in the group has been granted,
+  or the group has been granted from the settings.
+  Further requests for the other permissions in the group will not prompt a dialog and automatically grant the permission.
+
+- Denied: a permission has been permanently denied.
+  Further requests for the other permissions in the group will not prompt a dialog and automatically deny access to the permission.
+
+- Always ask: a permission in the group has been granted once,
+  or the group status has been set to _always ask_ from the settings.
+
+==== Hierarchical Structure for Permissions
+The state model organizes permissions into hierarchical collections:
+- UID permissions: set of permissions declared by a specific virtual instance of an application.
+
+- Permissions per user: set of UID permissions for apps installed for a virtual user.
+
+=== State Persistence Component
+
+=== Management Core Component
+
+=== User Interaction Component
+
+=== Attaching Model to Permission Management
+- Use method proxies
+- Patch methods?
+- Some checking at native code
+
+
+== Stuff to Say
 === Runtime Permissions
 - Android implementation details
 - My implementation
 - Permission dialog
 - Host permissions management
+
+=== Group Permissions
+- Grouping statically
+- Less cost by not checking every permission
+- Icons
 
 == Implementation
 === Architecture

@@ -342,7 +342,7 @@ Its main responsibilities are:
   for apps that were not being used for an extended period of time.
 
 
-=== Functional Components
+=== Functional Components <functional_components>
 #figure(
   caption: [The functional components and their interactions.],
   image("/images/permission-components.svg")

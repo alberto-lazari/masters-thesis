@@ -189,7 +189,7 @@ This currently allows VirtualXposed to provide a functional, pre-configured appl
 removing the need for specific manual setup.
 
 === VirtualApp Architecture
-// TODO: vrtualapp architecture diagram
+// TODO: virtualapp architecture diagram
 By looking at the structure of VirtualXposed's project,
 the code is divided in three Gradle projects:
 - `:app` is the UI part of the application,
