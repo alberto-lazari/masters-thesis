@@ -6,8 +6,11 @@ preventing apps from freely accessing sensitive information about the user or th
 It controls access to resources and features that extend beyond the app's sandbox,
 such as:
 - Hardware device capabilities (e.g., internet connection, location, microphone).
+
 - User's private data (e.g., calendar, media content, SMS).
+
 - System and device settings.
+
 This system of permissions gives apps a mechanism to follow the least privilege principle,
 and increase user awareness,
 creating a barrier that requires---either explicit or implicit---user or system consent,
@@ -30,9 +33,11 @@ Protection levels categorize permissions as follows:
 + Normal permissions:
   they grant access to simple resources that pose a low risk to user privacy and other apps' security,
   such as setting alarms, checking the network state, or controlling the flashlight.
+
 + Dangerous permissions:
   they provide access to sensitive data or resources, such as device's location, camera, or contacts,
   which have a higher impact on user privacy.
+
 + Signature permissions:
   they are only granted to apps that are signed with the same certificate as the app defining the permission.
   These are typically used when two or more apps from the same developer need to share data or functionality.
@@ -48,6 +53,7 @@ This further divides permissions in two categories, based on their protection le
 + Install-time permissions: they are granted once during installation, and cannot be revoked.
   They include both normal permissions, which are always granted automatically, and signature permissions,
   which depend on the requesting app's certificate.
+
 + Runtime permissions: they have a dangerous protection level and must be requested as the app runs,
   with explicit user approval through a permission dialog.
 
@@ -66,6 +72,7 @@ balancing user control with simplicity of understanding.
 Most of the times, the buttons are:
 - Allow: it's usually the top button and permanently grants the permission,
   marking it as a fixed setting that remains unless the user actively changes it.
+
 - Don't allow: it's the button at the bottom of the dialog and rejects the permission request,
   restricting the app's access to the requested resource for the current session.
 
@@ -73,6 +80,7 @@ Most of the times, the buttons are:
   users needed to check an option to remember the choice.
   More recently, since Android 11, that checkbox is no longer provided and, instead,
   the choice is automatically made permanent by rejecting the same permission twice in a row.
+
 - Only this time: for certain permissions that also involve a background access---like camera or location permissions---a third button may appear in the middle.
   This "Allow once" option grants access only for the current app session.
   For example, the camera permission applies to foreground access only,
@@ -120,6 +128,7 @@ certain permissions and states combinations arise some peculiarities:
   allowing the app to display a rationale for the permission if the user rejected a request for it.
   This method returns `true` only if the user has denied the permission once,
   but not permanently.
+
 - Dismissing the dialog: users can dismiss the permission dialog by tapping outside it,
   which leaves the permission unset without explicitly indicating user intent.
   In this scenario,
@@ -127,6 +136,7 @@ certain permissions and states combinations arise some peculiarities:
   meaning that dismissing the dialog repeatedly will not lead to a fixed denial.
   As a result, `shouldShowRequestPermissionRationale()` returns `false`,
   which might mislead the app into interpreting this as if the permission dialog was never shown in the first place.
+
 - Detecting fixed denials:
   the combination of `checkPermission()`---method that determines whether a permission is granted---and `shouldShowRequestPermissionRationale()` is the only way for third-party developers to infer permission statuses,
   because internal permission APIs are not accessible to normal apps.
@@ -144,15 +154,18 @@ certain permissions and states combinations arise some peculiarities:
   but it creates an issue that cannot be solved completely without an official support from the OS.
   Developers exploit creative solutions to tamper it,
   but are only able to partially address the issue.
+
 - Location group: permissions belonging to the "Location" permission group present some specific dialog layouts,
   introduced on various versions:
   - Android 10 introduced the tristate permission dialog @tristate_location,
     where users are given the choice to grant location permissions for foreground access only,
     or for background access too.
+
   - Android 12 introduced the possibility for users to choose between granting coarse or fine location access.
     It presents a different dialog based on the current state and permissions that are being requested,
     allowing to request the coarse location and then upgrade to the more precise version,
     or request both at the same time and let the user decide.
+
 - Background permissions: with the introduction of the tristate location permissions on Android 10,
   background permissions appeared for the first time.
   They are permissions linked to their foreground counterpart,
@@ -223,10 +236,13 @@ The state is modeled with multiple hierarchical classes:
 - `PermissionState`: stores the current grant status and flags associated with a specific permission.
   It also provides methods to perform direct operations on the permission,
   such as `grant()`, `revoke()`, and `updateFlags()`.
+
 - `UidPermissionState`: groups the state of permissions associated with a specific UID,
   and provides methods to interact with it,
   such as `getGrantedPermissions()` and `revokePermission()`.
+
 - `UserPermissionState`: organizes the `UidPermissionState` instances for all applications installed under a specific user.
+
 - `DevicePermissionState`: tracks the `UserPermissionState` associated with each user on the system.
 
 The `DevicePermissionState` owned by `PermissionManagerServiceImpl` is initialized during boot via the `restorePermissionState()` method,
@@ -279,6 +295,7 @@ which are normal permissions.
 
 `RuntimePermissionsPersistenceImpl` exposes its features in two public methods:
 + #raw(lang: "d", "RuntimePermissionsState readForUser(UserHandle user)").
+
 + #raw(lang: "d", "void writeForUser(RuntimePermisionsState runtimePermissions, UserHandle user)").
 
 ==== `Settings`
@@ -294,6 +311,7 @@ These are exposed in the `Settings` class in the methods:
   meaning that the file seems to be read once during the services initialization phase.
   Once the permissions state is loaded into memory it is managed there and, eventually,
   it will be written back to file as updates occur.
+
 - `writePermissionStateForUserLPr()`: writes the permissions state of a specific user.
   It is called by the `PackageManagerService` method `writePermissionSettings()`,
   which, in turn, is called from `PermissionManagerServiceImpl` via its `onPermissionUpdated()` callback whenever a permission is modified.
@@ -307,16 +325,19 @@ Its main responsibilities are:
   which is the one creating the dialogs presented to users when applications request runtime permissions.
   Its purpose is to bridge the interaction between apps and the permission model,
   handling user inputs and interact with the model accordingly.
+
 - Permission granting and group logic: it handles the granting logic,
   especially for runtime permissions within groups.
   When handling a permission request,
   it checks whether a permission in the same group is already granted.
   If not, it manages the change in the permission state.
+
 - Group revoking: a specific case to manage for permission groups is the possibility for them to be revoked.
   When revoking a permission,
   the module has to extend the operation to all other permissions in the group.
   It is also possible to revoke a group directly from the settings.
   The grant status of all permissions inside of it has to be updated and managed correctly.
+
 - Auto-revoke mechanism: it also implements the auto-revoke of permissions,
   for apps that were not being used for an extended period of time.
 

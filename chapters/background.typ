@@ -193,8 +193,10 @@ removing the need for specific manual setup.
 By looking at the structure of VirtualXposed's project,
 the code is divided in three Gradle projects:
 - `:app` is the UI part of the application,
+
   declaring activities and core components that interact with the virtualization framework.
 - `:launcher` is a fork of a AOSP-like launcher, adapted to be included in the application.
+
 - `:lib` is the actual VirtualApp framework, back-end of the application.
 
 This section explores the high-level architecture of the `:lib` project,

@@ -36,6 +36,7 @@ Required changes in the app included:
     </activity>
     ```
   ]
+
 - Service type declaration: starting with Android 14, foreground services must specify a service type.
   VirtualApp's daemon service had to be updated to include this requirement.
   #code(caption: [Updating the daemon service.])[
@@ -52,6 +53,7 @@ Required changes in the app included:
     </application>
     ```
   ]
+
 - Service notification: similarly, since Android 8,
   services running in the background are required to display a notification.
   The app was not doing it properly, so the feature was not working as expected.
@@ -69,6 +71,7 @@ Required changes in the app included:
         .build();
     ```
   ]
+
 - Use additional permissions: additional permissions were introduced over various system updates,
   and were necessary to provide specific features to plugin apps and the container app itself.
   These permissions include `QUERY_ALL_PACKAGES` and `ACCESS_BACKGROUND_LOCATION`.
@@ -146,6 +149,7 @@ Examples of typical fixes are the following:
     }
     ```
   ]
+
 - Internal class becomes independent: Android 14 moved the class `android.content.pm.PackageParser$SigningDetails`
   to a dedicated class `android.content.pm.SigningDetails`. \
   This caused the constructor `SigningInfo(SigningDetails details)` not to be found using reflection.
@@ -200,6 +204,7 @@ Examples of typical fixes are the following:
     }
     ```
   ] <snippet_dedicated_class>
+
 - Parameter changes: methods changed their parameters in multiple occasions,
   adding or removing them, causing vague errors to be raised.
   These provided no explanation about the issue,

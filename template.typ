@@ -56,23 +56,6 @@
     lang: lang,
     size: 11pt,
   )
-  set par(
-    justify: true,
-    first-line-indent: 1em,
-    spacing: .7em,
-  )
-  set list(spacing: 1em, marker: ([•], [◦], [--]))
-  show list: it => {
-    v(.2em)
-    it
-    v(.2em)
-  }
-  set enum(spacing: 1em)
-  show enum: it => {
-    v(.2em)
-    it
-    v(.2em)
-  }
   show heading: it => {
     smallcaps(it)
   }
@@ -84,6 +67,7 @@
     it
     v(.5em)
   }
+  set list(marker: ([•], [◦], [--]))
 
   {
     set heading(numbering: none)

@@ -40,13 +40,19 @@ The following chapters cover the context, design, and evaluation of this work:
 - @background provides the necessary background on virtualization,
   Android's architecture,
   and VirtualXposed (particularly the VirtualApp framework structure),
+
 - @related_work reviews related work in bringing Android sandboxing principles to app-level virtualization.
+
 - @permission_model analyzes Android's permission model in its general concepts,
   then summarizes a high-level architecture of its AOSP implementation.
+
 - @implementation presents the design and implementation of the custom permission model for virtual apps,
   addressing challenges with permission isolation within VirtualXposed.
+
 - @evaluation presents the evaluation of the model in the implemented cases,
   using both test cases and real-world applications.
+
 - @discussion discusses the challenges of realizing a universal solution,
   due to how app-level virtualization operates.
+
 - @conclusions sums up the results of the work and suggests a direction for future research by investigating on permission mapping across the latest Android platforms.
