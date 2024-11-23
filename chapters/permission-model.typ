@@ -204,14 +204,14 @@ permission management became more complex,
 requiring it to be split between multiple dedicated components.
 
 The following subsections describe the main classes involved in the current Android permission system,
-as shown in @classes_diagram.
+as shown in @system_classes_diagram.
 Each class is analyzed with respect to its responsibilities and interactions with other components,
 providing a comprehensive---although simplified---view of how the system operates.
 
 #figure(
   caption: [Simplified architecture of the permission model's classes.],
-  image("/images/permission-model.svg")
-) <classes_diagram>
+  image("/images/system-classes.svg")
+) <system_classes_diagram>
 
 // TODO: code references?
 ==== `PermissionManager`
@@ -348,12 +348,12 @@ contains several details that may be complex to keep in mind.
 It may be useful to categorize the individual classes into higher-level logical components,
 based on the different functional roles that can be found in the model.
 
-@components_diagram shows the components described in the following subsections.
+@system_components_diagram shows the components described in the following subsections.
 
 #figure(
   caption: [The functional components and their interactions.],
-  image("/images/permission-components.svg")
-) <components_diagram>
+  image("/images/system-components.svg")
+) <system_components_diagram>
 
 ==== Management Core
 It provides a centralized control for querying and modifying the state of permissions.

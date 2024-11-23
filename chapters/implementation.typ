@@ -317,7 +317,7 @@ while certain elements are directly embedded into the state model.
 
 It is also worth noting that the _registry_ component is mostly publicly accessible using Android APIs,
 making a full re-implementation is unnecessary.
-Instead, only few specific aspects of the registry are included inside the _management core_ and _state model_,
+Instead, only few specific aspects of the registry are included inside the _state model_,
 to address the limited specific needs required by the virtual model.
 
 The following subsections detail the design requirements for each component of the virtual permission model,
@@ -474,6 +474,8 @@ maintaining the integrity of the permission system and preventing the redirectio
 
 
 == Implementation
+- Host permissions
+- Icons
 === Architecture
 - Model
 - `VPermissionManager`
