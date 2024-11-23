@@ -196,11 +196,6 @@ described in later chapters.
 
 
 === Main Classes <main_classes>
-#figure(
-  caption: [Simplified architecture of the permission model's classes.],
-  image("/images/permission-model.svg")
-) <classes_diagram>
-
 Until Android 6, permission handling was managed directly by the `PackageManager` service.
 Since permissions were only granted at install-time,
 a single, centralized manager was sufficient.
@@ -212,6 +207,11 @@ The following subsections describe the main classes involved in the current Andr
 as shown in @classes_diagram.
 Each class is analyzed with respect to its responsibilities and interactions with other components,
 providing a comprehensive---although simplified---view of how the system operates.
+
+#figure(
+  caption: [Simplified architecture of the permission model's classes.],
+  image("/images/permission-model.svg")
+) <classes_diagram>
 
 // TODO: code references?
 ==== `PermissionManager`
@@ -343,15 +343,17 @@ Its main responsibilities are:
 
 
 === Functional Components <functional_components>
-#figure(
-  caption: [The functional components and their interactions.],
-  image("/images/permission-components.svg")
-) <components_diagram>
-
 The architecture described in @main_classes, even while being a simplification,
 contains several details that may be complex to keep in mind.
 It may be useful to categorize the individual classes into higher-level logical components,
 based on the different functional roles that can be found in the model.
+
+@components_diagram shows the components described in the following subsections.
+
+#figure(
+  caption: [The functional components and their interactions.],
+  image("/images/permission-components.svg")
+) <components_diagram>
 
 ==== Management Core
 It provides a centralized control for querying and modifying the state of permissions.

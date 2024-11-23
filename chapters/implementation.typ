@@ -320,7 +320,39 @@ making a full re-implementation is unnecessary.
 Instead, only few specific aspects of the registry are included inside the _management core_ and _state model_,
 to address the limited specific needs required by the virtual model.
 
-The following subsections detail the design requirements for each component.
+The following subsections detail the design requirements for each component of the virtual permission model,
+illustrated in @virtual_components_diagram.
+
+#figure(
+  caption: [The components of the virtual model and their interactions.],
+  image("/images/virtual-components.svg")
+) <virtual_components_diagram>
+
+=== Management Core Component
+The _management core_ provides essential operations for handling permission states.
+It is the interface replacing operations defined in Android's management component,
+emulating their implementation and adapting it to the virtual environment.
+Additionally, it includes a small compatibility layer within the virtualization framework's native library.
+This layer provides native code with access to the permission management core's features implemented in the main framework,
+allowing patches applied to system methods to redirect native-level permission checks to the virtual model.
+
+Since its interactions with virtual apps are designed to mimic the system's original model,
+the interface maintains a certain degree of similarity with the original component,
+to simplify the redirection process.
+
+The main responsibilities of this components are:
+- Querying the current state of permissions.
+
+- Performing operations such as granting, revoking, and supporting UI-related actions.
+
+- Managing and maintaining the overall permission state model.
+
+- Handling exceptions or special cases for specific permissions.
+
+==== Attaching Model to Permission Management
+- Use method proxies
+- Patch methods?
+- Some checking at native code
 
 === State Model Component
 It defines the data structures needed to store and manage permission-related information.
@@ -348,7 +380,7 @@ requiring the state model to store detailed information about their current stat
 The possible states for a runtime permission are:
 - Unrequested (default): the permission has not been requested by the application.
 
-- Granted: the permission has been permanently granted and will not be requested again, 
+- Granted: the permission has been permanently granted and will not be requested again,
   unless the user explicitly changes its status from the settings.
   Auto-revoking permissions are not addressed in the virtual model.
 
@@ -397,28 +429,49 @@ The state model organizes permissions into hierarchical collections:
 - Permissions per user: set of UID permissions for apps installed for a virtual user.
 
 === State Persistence Component
+The persistence component is responsible for managing the interaction with the permission file that stores the state model.
+It has two main responsibilities:
++ File parsing: reading and writing the permission state to and from the file,
+  ensuring the state model reflects the latest data.
++ Concurrent access management: handling concurrent file access,
+  since virtual apps operate in separate processes and may attempt to read or write the file simultaneously.
 
-=== Management Core Component
+To achieve this, the component ensures thread and process-safe operations,
+using locking mechanisms to prevent conflicts or data corruption.
+It abstracts these complexities,
+providing a simple interface for other components to access and modify the permission state as needed.
 
 === User Interaction Component
+This component defines how the user interacts with the permission model.
+It needs to closely mirror the experience provided by Android to leverage users' familiarity with the system.
+While aesthetic details can differ,
+the observable behavior---such as transitions between permission states---must align exactly with Android's implementation to maintain consistency and predictability.
 
-=== Attaching Model to Permission Management
-- Use method proxies
-- Patch methods?
-- Some checking at native code
+The main use case of this component is to display and manage UI elements,
+particularly the permission dialogs that appear when a plugin app requests permissions.
+It is also responsible for handling permission requests and providing the container application with settings activities to let users manage their permission preferences.
 
+Additionally, this component addresses a crucial consideration:
+when granting virtual permissions,
+it checks whether the container app itself holds the corresponding permission on the actual system.
+Granting a virtual permission without this verification would be both meaningless and inconsistent,
+as the container app would not be able to grant the virtual apps access to the associated functionality.
 
-== Stuff to Say
-=== Runtime Permissions
-- Android implementation details
-- My implementation
-- Permission dialog
-- Host permissions management
+=== Redirection Component
+The _redirection_ component is necessary to allow communication between virtual apps and the virtual permission model.
+Virtual apps may either directly invoke Android's permission management APIs or execute operations that inherently trigger permission checks within their code.
+This component addresses both scenarios,
+by implementing dynamic proxies and native method patches to create hooks.
+These hooks intercept permission-related calls and redirect them to the virtual permission _management core_,
+creating the illusion that permission requests are being processed directly by the system,
+when in reality, they are being managed by the virtual model,
+inside the virtualization framework.
 
-=== Group Permissions
-- Grouping statically
-- Less cost by not checking every permission
-- Icons
+Before redirecting any request to the virtual model,
+this component first checks the container app's permissions to ensure that the virtual app's request can be properly granted.
+This step ensures that the virtual model is only used when appropriate,
+maintaining the integrity of the permission system and preventing the redirection of requests when the container app itself lacks the necessary permissions.
+
 
 == Implementation
 === Architecture
