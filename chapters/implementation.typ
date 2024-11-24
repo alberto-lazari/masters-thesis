@@ -476,6 +476,12 @@ maintaining the integrity of the permission system and preventing the redirectio
 == Implementation
 - Host permissions
 - Icons
+
+#figure(
+  caption: [Simplified architecture of the virtual permission model's classes.],
+  image("/images/virtual-classes.svg")
+) <virtual_classes_diagram>
+
 === Architecture
 - Model
 - `VPermissionManager`
