@@ -56,6 +56,7 @@
     lang: lang,
     size: 11pt,
   )
+  set par(justify: true)
   show heading: it => {
     smallcaps(it)
   }
@@ -117,10 +118,11 @@
         block({
           set par(first-line-indent: 0pt)
           if it.numbering != none {
-            box(strong(text(
+            box(text(
               size: 100pt,
+              weight: "black",
               fill: accent-color,
-              counter(heading).display(it.numbering))))
+              counter(heading).display(it.numbering)))
               parbreak()
           }
           smallcaps(text(size: 26pt, it.body))
@@ -135,9 +137,16 @@
         set text(size: 12pt)
         it
         v(.2em)
-      } else if level > 3 {
+      } else {
         v(.5em)
-        smallcaps(it.body) + [.]
+        if level == 4 {
+          smallcaps(it.body) + [.]
+        } else if level == 5 {
+          set text(weight: "semibold")
+          emph(it.body) + [.]
+        } else {
+          it
+        }
         h(.1em)
       }
     }

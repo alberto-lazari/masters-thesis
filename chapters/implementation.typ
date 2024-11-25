@@ -27,7 +27,6 @@ Required changes in the app included:
         android:exported="true"
         android:label="@string/shared_to_vxp"
         android:taskAffinity="${applicationId}.share"
-        android:theme="@style/Theme.AppCompat.Light.Dialog" >
         <intent-filter>
             <action android:name="android.intent.action.SEND" />
             <category android:name="android.intent.category.DEFAULT" />
@@ -299,7 +298,8 @@ as shown in @old_uid_system and @new_uid_system.
   ```
 ] <new_uid_system>
 
-== Design
+
+== Design Overview <design_overview>
 The virtual model retains Android's permission model's key, high-level components outlined in @functional_components,
 with some adjustments to adapt them to a simpler---smaller in scope---implementation in a virtual environment.
 These are present because the system's implementation has to address many system-level access cases,
@@ -315,53 +315,63 @@ Since its logic is simpler, it is distributed across different components.
 Some responsibilities are included in user interaction and the management core,
 while certain elements are directly embedded into the state model.
 
-It is also worth noting that the _registry_ component is mostly publicly accessible using Android APIs,
+Additionally, it is worth noting that the _registry_ component is mostly publicly accessible using Android APIs,
 making a full re-implementation is unnecessary.
 Instead, only few specific aspects of the registry are included inside the _state model_,
 to address the limited specific needs required by the virtual model.
 
-The following subsections detail the design requirements for each component of the virtual permission model,
-illustrated in @virtual_components_diagram.
+Finally, the virtual model introduces a new _redirection_ component,
+which provides the necessary link between virtual apps' standard behavior---based on Android's permission model---and the virtual permission model.
+
+Together, these considerations lead to the definition of five primary components in the virtual permission model,
+as illustrated in @virtual_components_diagram:
++ State model.
+
++ State persistence.
+
++ Management core.
+
++ User interaction.
+
++ Redirection.
 
 #figure(
   caption: [The components of the virtual model and their interactions.],
   image("/images/virtual-components.svg")
 ) <virtual_components_diagram>
 
-=== Management Core Component
-The _management core_ provides essential operations for handling permission states.
-It is the interface replacing operations defined in Android's management component,
-emulating their implementation and adapting it to the virtual environment.
-Additionally, it includes a small compatibility layer within the virtualization framework's native library.
-This layer provides native code with access to the permission management core's features implemented in the main framework,
-allowing patches applied to system methods to redirect native-level permission checks to the virtual model.
+== Components Analysis
+This section explores the components of the virtual permission model,
+starting with an overview of their design and then moving into a detailed examination of their implementation.
 
-Since its interactions with virtual apps are designed to mimic the system's original model,
-the interface maintains a certain degree of similarity with the original component,
-to simplify the redirection process.
+Each following subsection is dedicated to a specific component and is structured in two parts:
++ Design: describes the component's design,
+  outlining its responsibilities and interactions with other components in the system.
+  It also addresses special cases that the component must handle,
+  with a focus on how its behavior differs from the equivalent component in the Android system.
 
-The main responsibilities of this components are:
-- Querying the current state of permissions.
++ Implementation: explains how the design concepts are realized in practice,
+  providing a detailed look at the classes that implement previously identified design requirements.
+  It analyzes key methods and presents example code snippets.
+  A class diagram of the component is always included,
+  offering a detailed look at classes architecture and their interactions.
 
-- Performing operations such as granting, revoking, and supporting UI-related actions.
+@virtual_classes_diagram presents a simplified view over all the classes providing an implementation to the design requirements.
 
-- Managing and maintaining the overall permission state model.
-
-- Handling exceptions or special cases for specific permissions.
-
-==== Attaching Model to Permission Management
-- Use method proxies
-- Patch methods?
-- Some checking at native code
+#figure(
+  caption: [Simplified architecture of the virtual permission model's classes.],
+  image("/images/virtual-classes.svg")
+) <virtual_classes_diagram>
 
 === State Model Component
+==== Design
 It defines the data structures needed to store and manage permission-related information.
 It supports three key aspects of permissions: install-time permissions, runtime permissions, and permission groups.
 State is managed differently, based on their type.
 
 Additionally, permissions are organized in a hierarchy to group them under multiple UIDs and users.
 
-==== Install-time permissions
+===== Install-time Permissions
 They have a simple, binary state:
 they either are granted or not.
 These permissions are typically static,
@@ -373,7 +383,8 @@ making status changes theoretically possible if needed.
 
 Beyond the basic granted/not-granted status, no additional metadata is required for their management.
 
-==== Runtime Permissions
+// TODO: override individual runtime permissions (with respect to its group)
+===== Runtime Permissions
 They are more complex,
 requiring the state model to store detailed information about their current status and history of changes.
 
@@ -406,7 +417,8 @@ Additional details for runtime permissions have to be addressed:
 - The _granted once_ status, assigned when a permission that is set to _always ask_ is granted for the current session,
   has to be reset between different app executions and when transitioning between other states.
 
-==== Permission groups
+// TODO: group icons
+===== Permission groups
 They reference multiple runtime permission records and are used to reduce the dependency from Android register APIs.
 Their possible state can be:
 - Unrequested (default): none of the permissions in the group have been set.
@@ -422,17 +434,21 @@ Their possible state can be:
 - Always ask: a permission in the group has been granted once,
   or the group status has been set to _always ask_ from the settings.
 
-==== Hierarchical Structure for Permissions
+===== Hierarchical Structure for Permissions
 The state model organizes permissions into hierarchical collections:
 - UID permissions: set of permissions declared by a specific virtual instance of an application.
 
 - Permissions per user: set of UID permissions for apps installed for a virtual user.
 
+==== Implementation
+
 === State Persistence Component
+==== Design
 The persistence component is responsible for managing the interaction with the permission file that stores the state model.
 It has two main responsibilities:
 + File parsing: reading and writing the permission state to and from the file,
   ensuring the state model reflects the latest data.
+
 + Concurrent access management: handling concurrent file access,
   since virtual apps operate in separate processes and may attempt to read or write the file simultaneously.
 
@@ -441,7 +457,100 @@ using locking mechanisms to prevent conflicts or data corruption.
 It abstracts these complexities,
 providing a simple interface for other components to access and modify the permission state as needed.
 
+==== Implementation
+
+=== Management Core Component
+==== Design
+The _management core_ provides essential operations for handling permission states.
+It is the interface replacing operations defined in Android's management component,
+emulating their implementation and adapting it to the virtual environment.
+Additionally, it includes a small compatibility layer within the virtualization framework's native library.
+This layer provides native code with access to the permission management core's features implemented in the main framework,
+allowing patches applied to system methods to redirect native-level permission checks to the virtual model.
+
+Since its interactions with virtual apps are designed to mimic the system's original model,
+the interface maintains a certain degree of similarity with the original component,
+to simplify the redirection process.
+
+The main responsibilities of this components are:
+- Querying the current state of permissions.
+
+- Performing operations such as granting, revoking, and supporting UI-related actions.
+
+- Managing and maintaining the overall permission state model.
+
+- Handling exceptions or special cases for specific permissions.
+
+==== Implementation
+The component is implemented as a single service in the virtualization framework,
+inspired by Android's `PermissionManager`.
+Like all other services in VirtualApp,
+`VPermissionManager` is implemented following the singleton pattern,
+allowing it to be easily accessed and referenced across the codebase,
+similar to what the Android service mechanism itself provide.
+
+Below is a breakdown of its architecture,
+illustrated in @management_core_diagram.
+
+#figure(
+  caption: [Management core component class diagram.],
+  image("/images/management-core.svg")
+) <management_core_diagram>
+
+===== Singleton Implementation
+The singleton pattern is implemented in the class with:
+- `INSTANCE`: the instance object, stored as a private, static, and final field,
+  ensuring that the class is actually instantiated once.
+  Because it is static it is also automatically instantiated by the Java runtime.
+
+- Private constructor: prevents instantiation of the class from outside.
+
+- `get()`: static method to get the singleton instance.
+
+===== System Configuration Methods
+These methods are responsible for setting up and managing system configurations related to permissions:
+- `systemReady()`: initializes the permission system when the virtual app starts.
+
+- `initPermissionsForUid(int uid, VPackage pkg)`: initializes permissions when a new app is installed,
+  creating permissions associations based on provided package informations.
+
+- `removePermissionsForUid(int uid)`: removes permissions associated with an app when it is uninstalled.
+
+===== General-Purpose Permission Management
+These methods provide access to permission data and manage permission states:
+- `AppPermissions getAppPermissions(int uid)`: returns permissions information for a specific UID.
+
+- `Permission getPermission(String permissionName, int uid)`: returns a specific permission or permission group by name for a given UID.
+
+- `updatePermission(String permissionName, int uid, Function operation)`: allows updating a permission's status with the generic `operation` callback.
+  It gives the callback access to the permission in its current state and automatically persists any changes.
+
+===== Specific Permission Logic Methods
+These methods implement the core logic exposed to the _redirection_ and _user interaction_ components,
+for handling specific permission checks and operations:
+- `int checkPermission(String permission, int uid)`: mirrors Android's permission checking mechanism,
+  returning `PERMISSION_GRANTED` or `PERMISSION_DENIED`.
+
+- `boolean shouldShowRequestPermissionRationale(String permission, int uid)`: also mirrors its Android API counterpart,
+  determining whether a rationale should be displayed for explaining a specific permission request.
+
+- `allowPermission(String permissionName, int uid)`: implements the "Allow" button behavior in the permission dialog.
+  It grants the requested permission or permission group.
+
+- `allowPermissionOnce(String permissionName, int uid)`: it is related to a situation where the user chooses to grant a permission temporarily,
+  typically associated with the "Allow once" button in the UI.
+  It grants the permission for the current session only,
+  meaning that it is only effective until the app is closed or the session ends.
+
+- `doNotAllowPermission(String permissionName, int uid)`: reflects the user's choice not to allow a permission or permission group,
+  which corresponds to the "Don't Allow" button in the dialog.
+  It handles the logic of denying the permission, or marking it as "denied once".
+  It also handles the denial of permissions within groups,
+  ensuring that when a permission group is denied, the individual permissions in it are properly denied as well.
+
+// TODO: dialog is not always a perfect replica (location, background permissions, ...)
 === User Interaction Component
+==== Design
 This component defines how the user interacts with the permission model.
 It needs to closely mirror the experience provided by Android to leverage users' familiarity with the system.
 While aesthetic details can differ,
@@ -457,7 +566,16 @@ it checks whether the container app itself holds the corresponding permission on
 Granting a virtual permission without this verification would be both meaningless and inconsistent,
 as the container app would not be able to grant the virtual apps access to the associated functionality.
 
+==== Implementation
+
+// TODO: examples
+// Custom permission model implemented for:
+// - `checkPermission`
+// - `requestPermissions`
+// - Camera permission checking
+// - Contacts content provider permissions
 === Redirection Component
+==== Design
 The _redirection_ component is necessary to allow communication between virtual apps and the virtual permission model.
 Virtual apps may either directly invoke Android's permission management APIs or execute operations that inherently trigger permission checks within their code.
 This component addresses both scenarios,
@@ -472,33 +590,4 @@ this component first checks the container app's permissions to ensure that the v
 This step ensures that the virtual model is only used when appropriate,
 maintaining the integrity of the permission system and preventing the redirection of requests when the container app itself lacks the necessary permissions.
 
-
-== Implementation
-- Host permissions
-- Icons
-
-#figure(
-  caption: [Simplified architecture of the virtual permission model's classes.],
-  image("/images/virtual-classes.svg")
-) <virtual_classes_diagram>
-
-=== Architecture
-- Model
-- `VPermissionManager`
-- Dialog
-- Settings activities
-=== Implementation Peculiarities
-- Override individual runtime permissions (with respect to its group)
-- Install-time permissions could be revoked (no settings for that though)
-- Dialog is not always a perfect replica (location, background permissions, ...)
-=== Replace System Manager With Custom Implementation
-==== Technical Solutions
-Different methods:
-- Dynamic proxies
-- Native interface
-==== Examples
-Custom permission model implemented for:
-- `checkPermission`
-- `requestPermissions`
-- Camera permission checking
-- Contacts content provider permissions
+==== Implementation

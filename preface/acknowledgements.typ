@@ -7,5 +7,5 @@
 
 #v(1cm)
 
-// TODO
+// TODO: write acknowledgements
 #acknowledgements-bookmark
