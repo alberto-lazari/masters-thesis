@@ -405,16 +405,16 @@ The possible states for a runtime permission are:
   unless the user explicitly changes its status from the settings.
 
 - Always ask (not granted): the permission has been granted once in another session,
-  or it has been set as _always ask_ from the settings.
+  or it has been set as "Always ask" from the settings.
 
 - Always ask (granted for current execution): the permission is granted for the current session,
   but will need to be requested again in the future.
 
 Additional details for runtime permissions have to be addressed:
-- The _denied once_ status has to be reset when permissions transition to a more permissive status,
-  like _always ask_ or _granted_.
+- The "Denied once" status has to be reset when permissions transition to a more permissive status,
+  like "Always ask" or "Granted".
 
-- The _granted once_ status, assigned when a permission that is set to _always ask_ is granted for the current session,
+- The "Granted once" status, assigned when a permission that is set to "Always ask" is granted for the current session,
   has to be reset between different app executions and when transitioning between other states.
 
 // TODO: group icons
@@ -432,7 +432,7 @@ Their possible state can be:
   Further requests for the other permissions in the group will not prompt a dialog and automatically deny access to the permission.
 
 - Always ask: a permission in the group has been granted once,
-  or the group status has been set to _always ask_ from the settings.
+  or the group status has been set to "Always ask" from the settings.
 
 ===== Hierarchical Structure for Permissions
 The state model organizes permissions into hierarchical collections:
@@ -514,10 +514,6 @@ These methods are responsible for setting up and managing system configurations 
   #code(caption: [`systemReady` method, initializing `permissionCache`'s state.])[
     #set text(size: .9em)
     ```java
-    /**
-     * Prepare the environment.
-     * To call during a virtual app startup process.
-     */
     public synchronized void systemReady() {
         // Initialize the permission cache
         permissionCache.init();
@@ -550,10 +546,6 @@ These methods provide access to permission data and manage permission states:
   #code(caption: [`getAppPermissions` method, reading `permissionCache`'s state.])[
     #set text(size: .9em)
     ```java
-    /**
-     * @return App permissions for @uid.
-     * @throws SecurityException if a VUID is trying to access permissions for a different @uid.
-     */
     public AppPermissions getAppPermissions(final int uid) {
         return permissionCache.read(uid, Function.identity());
     }
@@ -566,7 +558,7 @@ These methods provide access to permission data and manage permission states:
   It gives the callback access to the permission in its current state and automatically persists any changes.
 
 ===== Specific Permission Logic Methods
-These methods implement the core logic exposed to the _redirection_ and _user interaction_ components,
+These methods implement the core logic exposed to the redirection and user interaction components,
 for handling specific permission checks and operations:
 - `int checkPermission(String permission, int uid)`: mirrors Android's permission checking mechanism,
   returning `PERMISSION_GRANTED` or `PERMISSION_DENIED`.
@@ -591,10 +583,6 @@ for handling specific permission checks and operations:
   #code(caption: [`doNotAllowPermission` method, showing a usage of `updatePermission`.])[
     #set text(size: .95em)
     ```java
-    /**
-    * Reflect the intention of the user of not allowing a permission (or a group).
-    * If a runtime permission has been denied once in the past it will be permanently denied.
-    */
     public void doNotAllowPermission(final String permissionName, final int uid) {
       updatePermission(permissionName, uid, permission -> {
         if (permission instanceof InstallPermission) {
@@ -644,6 +632,263 @@ Granting a virtual permission without this verification would be both meaningles
 as the container app would not be able to grant the virtual apps access to the associated functionality.
 
 ==== Implementation
+The component is implemented in two distinct ways,
+reflecting the separation between the virtualization framework and the container app.
+Each approach addresses different aspects of user interaction with the permission system:
+- In the virtualization framework, user interaction is handled through dialogs that are displayed when permission requests occur.
+
+- In the container app, user interaction focuses on managing permission preferences.
+
+Because these interactions are distinct and implemented in physically separate parts of the codebase,
+the following sections describe each approach in separately.
+
+===== Permission Requests
+As shown in @user_interaction_request_diagram,
+there are two activities managing permission requests:
+
+#figure(
+  caption: [Permission requests activities class diagram.],
+  image("/images/user-interaction-request.svg")
+) <user_interaction_request_diagram>
+
++ `GrantPermissionsActivity` is the entry point for handling permission requests,
+  coming from the redirection component.
+  It mirrors the `GrantPermissionsActivity` in Android's `PermissionController` component,
+  adapting it for the virtualization framework.
+
+  Its core methods are:
+  - `onCreate(Bundle savedInstanceState)`:
+    initializes the activity by parsing permission request data from the intent and invokes `grantNextPermission()` to begin processing requests.
+
+  - `grantNextPermission()`: processes the current permission request based on its status and displays the appropriate dialog (group or individual permission).
+    It also checks whether the host has the required permission.
+    If not, it launches the `GrantHostPermissionActivity` to alert the user and request it.
+
+  - `grantPermission()`: perform the actual decision of either showing the dialog or directly returning a result,
+    based on whether the permission is already granted or denied.
+
+    #code(caption: [`grantPermission` method.])[
+      #set text(.9em)
+      ```java
+      private void grantPermission(final String permissionName) {
+          final var permission = permissionManager.getPermission(permissionName, uid,
+                  RuntimePermission.class);
+          final var group = permission.getPermissionGroup();
+          if (!permission.needsRequestDialog()) {
+              switch (permission.getStatus()) {
+                  case Status.ALWAYS_ASK, Status.UNREQUESTED -> {
+                      if (group != null && group.isGranted()) {
+                          permissionManager.allowPermission(permissionName, uid);
+                      }
+                  }
+              };
+              setGrantResult(permission.isGranted()
+                  ? PERMISSION_GRANTED
+                  : PERMISSION_DENIED);
+              return;
+          }
+          if (permission.isOverridden()) {
+              // If not linked to group, show request dialog for the individual permission
+              showPermissionRequestDialog(permission);
+              return;
+          }
+          if (group != null && group.isGranted()) {
+              // Group is already granted, grant permission too
+              permissionManager.allowPermission(permissionName, uid);
+              return;
+          }
+          // Show dialog for the permission group
+          showGroupRequestDialog(permission);
+      }
+      ```
+    ]
+
+  - `onActivityResult(int requestCode, int resultCode, Intent data)`: handles results from host permission requests.
+    If denied, it skips further requests for the same group, otherwise, it proceeds with the request for the virtual app.
+
+  Some methods are dedicated to the dialog handling:
+  - `showPermissionRequestDialog(RuntimePermission permission)`: displays a dialog for a permission not assigned to a group or that is overridden,
+    thus it has to be managed individually.
+
+  - `showGroupRequestDialog(RuntimePermission permission)`: displays a dialog for `permission`'s permission group.
+
+  - `Dialog createRequestDialog(RuntimePermission permission, String message)`: constructs a dialog showing the right options for `permission`.
+
+    #code(caption: [`createRequestDialog` method, creating and customizing the dialog.])[
+      #set text(.9em)
+      ```java
+      private Dialog createRequestDialog(RuntimePermission permission, String message) {
+          final var permissionName = permission.getName();
+          final var dialog = new Dialog(this);
+
+          // ...
+
+          icon.setImageResource(permission.getGroupIconRes());
+          messageView.setText(Html.fromHtml(message));
+          allowButton.setOnClickListener(view -> {
+              permissionManager.allowPermission(permissionName, uid);
+              dismissWith(PERMISSION_GRANTED, dialog);
+          });
+          onlyOnceButton.setOnClickListener(view -> {
+              permissionManager.allowPermissionOnce(permissionName, uid);
+              dismissWith(PERMISSION_GRANTED, dialog);
+          });
+          doNotAllowButton.setOnClickListener(view -> {
+              permissionManager.doNotAllowPermission(permissionName, uid);
+              if (group != null) {
+                  // Don't keep requesting permissions for the same group
+                  groupsToSkip.add(group.getName());
+              }
+              dismissWith(PERMISSION_DENIED, dialog);
+          });
+          dialog.setOnCancelListener(view -> {
+              setResultAndFinish(RESULT_CANCELED);
+          });
+          if (!hasBackgroundPermission) {
+              onlyOnceButton.setVisibility(TextView.GONE);
+          }
+
+          // ...
+
+          return dialog;
+      }
+      ```
+    ]
+
+  - `setGrantResult(int grantResult)`: updates the `grantResults` array and advances the request loop.
+
+  - `setResultAndFinish(int resultCode)`: finalizes the activity with the results.
+
++ `GrantHostPermissionActivity` manages host-level permission requests when the virtualization framework identifies that the host lacks necessary permissions.
+
+  Key methods include:
+  - `onCreate(Bundle savedInstanceState)`:
+    initializes the activity by retrieving permission details from the intent and displays an alert dialog explaining the request.
+
+  - `onRequestPermissionsResult()`: handles the result of the user's decision.
+    If the permission is granted, it automatically requests all permissions in the group to prevent any future warning.
+    If it seems denied permanently, it presents another dialog linking to the app settings.
+
+  - `setResultAndFinish(int resultCode)`: finishes the activity with the result.
+
+  Deprecated permissions, identified through `DEPRECATED_PERMISSIONS`,
+  are skipped automatically without user interaction, based on the current Android API level.
+  This ensures obsolete requests do not disrupt the workflow.
+
+===== Permission Preferences
+Permission preferences are also managed by two different activities,
+represented in @user_interaction_settings_diagram:
+
+#figure(
+  caption: [Permission preferences activities class diagram.],
+  image("/images/user-interaction-settings.svg")
+) <user_interaction_settings_diagram>
+
++ `PermissionsActivity` is the entry point for managing app permissions via a settings-like interface.
+  It includes an inner `PermissionsFragment` that displays and manages the UI components for permission preferences.
+
+  After setting being set as the main content of the activity,
+  `PermissionsFragment` calls its `onCreatePreferences()` method.
+  This method loads the top-level preferences from the layout and initializes the fragment's context and UI elements.
+  The layout consists of:
+  - A switch to toggle alerts for denied host permissions.
+    This switch is tied to a key stored in shared preferences and is dynamically updated based on the current settings.
+
+  - A list of all installed virtual apps preferences,
+    redirecting to their specific `PermissionManageActivity`.
+
+  The applications list is then created with `loadApps()`.
+  This list is used to dynamically create the list of `AppPreference` objects for each app with `createAppPreference()`,
+  associating it with the relevant app-specific data and click behavior.
+
+  #code(caption: [`createAppPreference` method, creating a button to launch the relative `PermissionManageActivity`.])[
+    ```java
+    private Preference createAppPreference(final AppManageInfo app) {
+        final CharSequence appName = app.getName();
+        final AppPreference appPreference = new AppPreference(ctx, app);
+        final int uid = VPackageManager.get().getPackageUid(app.pkgName, app.userId);
+
+        appPreference.setKey("app_permission_preference_" + appName);
+        appPreference.setTitle(appName);
+        // The actual icon will be set dynamically
+        appPreference.setIcon(DEFAULT_APP_ICON);
+        appPreference.setLayoutResource(R.layout.item_app_permission);
+        appPreference.setOnPreferenceClickListener(preference -> {
+            final Intent intent = new Intent(ctx, PermissionManageActivity.class);
+            intent.putExtra(EXTRA_APP_NAME, appName);
+            intent.putExtra(EXTRA_APP_UID, uid);
+            intent.putExtra(EXTRA_PERMISSIONS_TYPE, PermissionGroup.class);
+            startActivity(intent);
+            return true;
+        });
+
+        return appPreference;
+    }
+    ```
+  ]
+
++ `PermissionManageActivity` is designed to provide detailed control over app permissions,
+  allowing users to manage permissions for a specific app.
+  The activity is initialized with intent extras that pass the app name, UID, and permission type.
+  Based on `type`, the activity shows different layouts,
+  to reflect the differences between the states that install-time permissions, runtime permissions, and permission groups can assume.
+  Initially, `PermissionsActivity` starts the activity with type "group",
+  which shows a preference in its layout that allows the overriding of runtime permissions.
+  This is done in this same activity, by passing `RuntimePermission` as type.
+  It could also support install-time permissions out of the box,
+  but this deviates from Android's model design.
+
+	Just like `PermissionsActivity`, the activity replaces its content with a `PermissionsFragment` in its `onCreate()` method.
+  The fragment categorizes permissions into four groups, based on permissions' state and type:
+  - Allowed: granted to the app.
+
+  - Ask: runtime permission or permission group needing a request.
+
+  - Denied: permanently denied.
+
+  - Follow group: runtime permission that is set to follow its group's status.
+
+  In its `onCreatePreferences()` method,
+  the fragment creates a `PermissionPreference` for each permission of the specific type with `createPermissionPreference()`.
+
+  `PermissionPreference` includes methods to modify permissions' status:
+  - `showContextMenu()`: when clicked, the preference shows a context menu with options to update the permission's status.
+
+  - `handleMenuChoice(int choice)`: uses `permissionManager` to perform the permission update in the model.
+    Then it calls `updateCategories()`, to move the preference accordingly in the UI.
+
+  #code(caption: [`handleMenuChoice` updating the permission state and refreshing the UI.])[
+    ```java
+    private void handleMenuChoice(final int choice) {
+        if (choice == R.id.action_group) {
+            permissionManager.updatePermission(RuntimePermission.class,
+                permission.getName(), uid,
+                newPermission -> {
+                    final var group = newPermission.getPermissionGroup();
+                    newPermission.followGroup();
+                    newPermission.setStatus(group.getStatus());
+                });
+            updateCategories();
+            return;
+        }
+
+        if (permission instanceof RuntimePermission runtimePermission) {
+            runtimePermission.override();
+        }
+        if (choice == R.id.action_allow) {
+            permissionManager.allowPermission(permission.getName(), uid);
+        } else if (choice == R.id.action_ask) {
+            permissionManager.updatePermission(permission.getName(), uid,
+                newPermission -> {
+                    newPermission.setStatus(ALWAYS_ASK);
+                });
+        } else if (choice == R.id.action_do_not_allow) {
+            permissionManager.doNotAllowPermission(permission.getName(), uid);
+        }
+        updateCategories();
+    }
+    ```
+  ]
 
 // TODO: examples
 // Custom permission model implemented for:
@@ -653,11 +898,11 @@ as the container app would not be able to grant the virtual apps access to the a
 // - Contacts content provider permissions
 === Redirection Component
 ==== Design
-The _redirection_ component is necessary to allow communication between virtual apps and the virtual permission model.
+The redirection component is necessary to allow communication between virtual apps and the virtual permission model.
 Virtual apps may either directly invoke Android's permission management APIs or execute operations that inherently trigger permission checks within their code.
 This component addresses both scenarios,
 by implementing dynamic proxies and native method patches to create hooks.
-These hooks intercept permission-related calls and redirect them to the virtual permission _management core_,
+These hooks intercept permission-related calls and redirect them to the virtual permission management core,
 creating the illusion that permission requests are being processed directly by the system,
 when in reality, they are being managed by the virtual model,
 inside the virtualization framework.
