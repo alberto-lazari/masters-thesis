@@ -509,7 +509,34 @@ The singleton pattern is implemented in the class with:
 
 ===== System Configuration Methods
 These methods are responsible for setting up and managing system configurations related to permissions:
-- `systemReady()`: initializes the permission system when the virtual app starts.
+- `systemReady()`: initializes the permission system when the virtual app starts by loading the permission state and revoking permissions' "granted once" status.
+
+  #code(caption: [`systemReady` method, initializing `permissionCache`'s state.])[
+    #set text(size: .9em)
+    ```java
+    /**
+     * Prepare the environment.
+     * To call during a virtual app startup process.
+     */
+    public synchronized void systemReady() {
+        // Initialize the permission cache
+        permissionCache.init();
+
+        // Reset granted once status from all runtime permissions
+        permissionCache.update(permissions -> {
+            // Iterate on all virtual apps' permissions
+            permissions.values().forEach(appPermissions -> {
+                appPermissions.getAll(RuntimePermission.class).forEach((name, permission) -> {
+                    if (permission.isGrantedOnce()) {
+                        // Reset status to revert granted once
+                        permission.setStatus(Status.ALWAYS_ASK);
+                    }
+                });
+            });
+        });
+    }
+    ```
+  ]
 
 - `initPermissionsForUid(int uid, VPackage pkg)`: initializes permissions when a new app is installed,
   creating permissions associations based on provided package informations.
@@ -519,6 +546,19 @@ These methods are responsible for setting up and managing system configurations 
 ===== General-Purpose Permission Management
 These methods provide access to permission data and manage permission states:
 - `AppPermissions getAppPermissions(int uid)`: returns permissions information for a specific UID.
+
+  #code(caption: [`getAppPermissions` method, reading `permissionCache`'s state.])[
+    #set text(size: .9em)
+    ```java
+    /**
+     * @return App permissions for @uid.
+     * @throws SecurityException if a VUID is trying to access permissions for a different @uid.
+     */
+    public AppPermissions getAppPermissions(final int uid) {
+        return permissionCache.read(uid, Function.identity());
+    }
+    ```
+  ]
 
 - `Permission getPermission(String permissionName, int uid)`: returns a specific permission or permission group by name for a given UID.
 
@@ -547,6 +587,43 @@ for handling specific permission checks and operations:
   It handles the logic of denying the permission, or marking it as "denied once".
   It also handles the denial of permissions within groups,
   ensuring that when a permission group is denied, the individual permissions in it are properly denied as well.
+
+  #code(caption: [`doNotAllowPermission` method, showing a usage of `updatePermission`.])[
+    #set text(size: .95em)
+    ```java
+    /**
+    * Reflect the intention of the user of not allowing a permission (or a group).
+    * If a runtime permission has been denied once in the past it will be permanently denied.
+    */
+    public void doNotAllowPermission(final String permissionName, final int uid) {
+      updatePermission(permissionName, uid, permission -> {
+        if (permission instanceof InstallPermission) {
+          // Simply deny install permissions
+          permission.setStatus(Status.DENIED);
+        } else if (permission instanceof PermissionGroup permissionGroup) {
+          // Set as unrequested, the individual runtime permissions will reflect the fact
+          // that the group has been denied.
+          // This allows to permissions to display the dialog, which is lines up with Android
+          permissionGroup.setStatus(Status.UNREQUESTED);
+          permissionGroup.getPermissions().stream()
+          .filter(runtimePermission -> !runtimePermission.isOverridden())
+          .forEach(runtimePermission -> {
+            // Set all (non-overridden) runtime permissions in the group as denied once
+            runtimePermission.setDeniedOnce();
+          });
+        } else if (permission instanceof RuntimePermission runtimePermission) {
+          // Check if permission had been denied once
+          if (runtimePermission.shouldShowRequestPermissionRationale()) {
+            // RuntimePermission's setStatus will automatically set the group status
+            runtimePermission.setStatus(Status.DENIED);
+          } else {
+            runtimePermission.setDeniedOnce();
+          }
+        }
+      });
+    }
+    ```
+  ]
 
 // TODO: dialog is not always a perfect replica (location, background permissions, ...)
 === User Interaction Component
