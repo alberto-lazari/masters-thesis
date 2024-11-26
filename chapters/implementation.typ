@@ -468,7 +468,7 @@ providing a simple interface for other components to access and modify the permi
 
 #figure(
   caption: [State persistence component class diagram.],
-  image("/images/state-persistence.svg")
+  image("/images/components/state-persistence.svg")
 ) <state_persistence_diagram>
 
 === Management Core Component
@@ -512,7 +512,7 @@ illustrated in @management_core_diagram.
 
 #figure(
   caption: [Management core component class diagram.],
-  image(width: 65%, "/images/management-core.svg")
+  image(width: 65%, "/images/components/management-core.svg")
 ) <management_core_diagram>
 
 ===== Singleton Implementation
@@ -690,7 +690,7 @@ there are two activities managing permission requests:
 
 #figure(
   caption: [Permission requests activities class diagram.],
-  image("/images/user-interaction-request.svg")
+  image("/images/components/user-interaction-request.svg")
 ) <user_interaction_request_diagram>
 
 + `GrantPermissionsActivity` is the entry point for handling permission requests,
@@ -820,13 +820,33 @@ there are two activities managing permission requests:
   are skipped automatically without user interaction, based on the current Android API level.
   This ensures obsolete requests do not disrupt the workflow.
 
+#{
+  set text(.9em)
+  grid(
+    columns: (1fr, 1fr, 1fr),
+    inset: .8em,
+    figure(
+      caption: [Missing host permission alert.],
+      image("/images/components/host-permission-alert.png")
+    ),
+    figure(
+      caption: [Host permission dialog. Notice VirtualXposed name],
+      image("/images/components/host-permission-request.png")
+    ),
+    figure(
+      caption: [Virtual permission dialog.],
+      image("/images/components/virtual-permission-request.png")
+    ),
+  )
+}
+
 ===== Permission Preferences
 Permission preferences are also managed by two different activities,
 represented in @user_interaction_settings_diagram:
 
 #figure(
   caption: [Permission preferences activities class diagram.],
-  image("/images/user-interaction-settings.svg")
+  image("/images/components/user-interaction-settings.svg")
 ) <user_interaction_settings_diagram>
 
 + `PermissionsActivity` is the entry point for managing app permissions via a settings-like interface.
@@ -935,6 +955,23 @@ represented in @user_interaction_settings_diagram:
     ```
   ]
 
+#{
+  set image(height: 50%)
+  set text(.9em)
+  grid(
+    columns: (1fr, 1fr),
+    inset: .8em,
+    figure(
+      caption: [Apps list in permissions activity.],
+      image("/images/components/permissions-activity.png")
+    ),
+    figure(
+      caption: [_TestApp_ permission manage activity.],
+      image("/images/components/permission-manage.png")
+    ),
+  )
+}
+
 === Redirection Component <redirection>
 ==== Design
 The redirection component is necessary to allow communication between virtual apps and the virtual permission model.
@@ -975,7 +1012,7 @@ specific features are addressed to extend the support to practical use cases:
 
 #figure(
   caption: [Redirection component class diagram.],
-  image(width: 85%, "/images/redirection.svg")
+  image(width: 85%, "/images/components/redirection.svg")
 ) <redirection_diagram>
 
 ===== Method Proxies

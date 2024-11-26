@@ -1,3 +1,5 @@
+#set image(height: 50%)
+
 = Evaluation <evaluation>
 The evaluation of the virtual permission model was performed using two distinct methods:
 a custom _TestApp_ and _Telegram_, a widely used real-world application.
