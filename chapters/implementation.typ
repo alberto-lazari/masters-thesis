@@ -445,6 +445,7 @@ The state model organizes permissions into hierarchical collections:
 
 - Permissions per user: set of UID permissions for apps installed for a virtual user.
 
+// TODO: state model
 ==== Implementation
 
 === State Persistence Component
@@ -462,6 +463,7 @@ using locking mechanisms to prevent conflicts or data corruption.
 It abstracts these complexities,
 providing a simple interface for other components to access and modify the permission state as needed.
 
+// TODO: state persistence
 ==== Implementation
 
 === Management Core Component
@@ -1088,7 +1090,8 @@ All operations are redirected to enforce permissions before execution,
 as detailed in @content_provider_ops.
 
 To achieve this,
-an `enforcePermissions()` method is invoked before performing any operation.
+an `enforcePermissions()` method is invoked before performing any operation,
+from the `ProviderHook` dynamic proxy.
 Depending on whether the operation involves reading or writing restricted data,
 the method delegates checks to either `enforceReadPermission()` or `enforceWritePermission()`.
 Both methods closely mirror their Android system counterparts,
