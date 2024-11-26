@@ -383,7 +383,6 @@ making status changes theoretically possible if needed.
 
 Beyond the basic granted/not-granted status, no additional metadata is required for their management.
 
-// TODO: override individual runtime permissions (with respect to its group)
 ===== Runtime Permissions
 They are more complex,
 requiring the state model to store detailed information about their current status and history of changes.
@@ -416,6 +415,12 @@ Additional details for runtime permissions have to be addressed:
 
 - The "Granted once" status, assigned when a permission that is set to "Always ask" is granted for the current session,
   has to be reset between different app executions and when transitioning between other states.
+
+In the context of the virtual permission model,
+runtime permissions are allowed to be overridden,
+that is, they can be assigned a status diverging from their current group's status.
+This provides more granularity on user's permission control,
+but still partially aligning to Android's model.
 
 // TODO: group icons
 ===== Permission groups
@@ -481,6 +486,7 @@ The main responsibilities of this components are:
 
 - Handling exceptions or special cases for specific permissions.
 
+// TODO: native compatibility layer
 ==== Implementation
 The component is implemented as a single service in the virtualization framework,
 inspired by Android's `PermissionManager`.
@@ -489,12 +495,18 @@ Like all other services in VirtualApp,
 allowing it to be easily accessed and referenced across the codebase,
 similar to what the Android service mechanism itself provide.
 
-Below is a breakdown of its architecture,
+Additionally, the component includes a native compatibility layer,
+which acts as a wrapper around the Java service.
+This layer simplifies access to `VPermissionManager` from JNI,
+allowing native code to conveniently interact with permissions,
+without needing to handle Java service calls directly.
+
+Below is a breakdown of the component architecture,
 illustrated in @management_core_diagram.
 
 #figure(
   caption: [Management core component class diagram.],
-  image("/images/management-core.svg")
+  image(width: 65%, "/images/management-core.svg")
 ) <management_core_diagram>
 
 ===== Singleton Implementation
@@ -544,7 +556,6 @@ These methods provide access to permission data and manage permission states:
 - `AppPermissions getAppPermissions(int uid)`: returns permissions information for a specific UID.
 
   #code(caption: [`getAppPermissions` method, reading `permissionCache`'s state.])[
-    #set text(size: .9em)
     ```java
     public AppPermissions getAppPermissions(final int uid) {
         return permissionCache.read(uid, Function.identity());
@@ -613,7 +624,32 @@ for handling specific permission checks and operations:
     ```
   ]
 
-// TODO: dialog is not always a perfect replica (location, background permissions, ...)
+===== Native Compatibility Layer
+It provides the following utility functions in the `permission.h` header:
+- `initializeCachedReferences()`: sets up static references to Java classes and methods for permission checks.
+  This function is called in the framework native library initialization process.
+
+- `bool permissionGranted(JNIEnv*, const char*)`: verifies if the calling process has the required permission.
+
+- `int enforcePermission(JNIEnv*, const char*)`: enforces a permission check,
+  returning `android::OK` if granted,
+  or logging an error and returning `android::PERMISSION_DENIED` if denied.
+
+#code(caption: [Native `enforcePermission` function implementation.])[
+  ```cpp
+  int enforcePermission(JNIEnv* env, const char* permission) {
+    if (permissionGranted(env, permission)) {
+      return android::OK;
+    }
+    jint pid = env->CallStaticIntMethod(binderClass, getCallingPidMethod);
+    jint uid = env->CallStaticIntMethod(binderClass, getCallingUidMethod);
+    // Similar to the message in CameraService.cpp
+    log_err("Permission Denial: %s pid=%d, uid=%d", permission, pid, uid);
+    return android::PERMISSION_DENIED;
+  }
+  ```
+] <native_enforce_permission>
+
 === User Interaction Component
 ==== Design
 This component defines how the user interacts with the permission model.
@@ -712,7 +748,10 @@ there are two activities managing permission requests:
 
   - `showGroupRequestDialog(RuntimePermission permission)`: displays a dialog for `permission`'s permission group.
 
-  - `Dialog createRequestDialog(RuntimePermission permission, String message)`: constructs a dialog showing the right options for `permission`.
+  - `Dialog createRequestDialog(RuntimePermission permission, String message)`: creates a dialog showing the right options for `permission`.
+    The dialog may not always be perfectly matching to the system's verison,
+    due to higher complexity for specific permissions,
+    such as location, media access, or background permissions.
 
     #code(caption: [`createRequestDialog` method, creating and customizing the dialog.])[
       #set text(.9em)
@@ -890,12 +929,6 @@ represented in @user_interaction_settings_diagram:
     ```
   ]
 
-// TODO: examples
-// Custom permission model implemented for:
-// - `checkPermission`
-// - `requestPermissions`
-// - Camera permission checking
-// - Contacts content provider permissions
 === Redirection Component
 ==== Design
 The redirection component is necessary to allow communication between virtual apps and the virtual permission model.
@@ -913,3 +946,228 @@ This step ensures that the virtual model is only used when appropriate,
 maintaining the integrity of the permission system and preventing the redirection of requests when the container app itself lacks the necessary permissions.
 
 ==== Implementation
+The main focus is on redirecting core methods of the Android API, particularly:
+- `checkPermission`: as "the only public entry point for permissions checking" @checkPermission,
+  it is a fundamental element of the system.
+  By redirecting this method, all permission checks made directly from virtual apps will target the virtual permission model.
+
+- `requestPermissions`: handles permission requests, sending them to the `PermissionController` using an Intent.
+  By hooking into the `startActivity` method, it is possible to redirect permission requests to the virtual model.
+
+Both `checkePermission` and `requestPermission` are managed by the `ActivityManagerService`,
+allowing the use of dynamic proxies to handle their redirection.
+The framework already defines proxies for these methods,
+so the implementation mostly consists in integrating virtual permission logic into the existing system.
+
+In addition to redirecting core methods,
+specific features are addressed to extend the support to practical use cases:
+- Permission checks are applied before executing actions on content providers,
+  with all operations patched to enforce the required read and write permissions.
+
+- A native patch is implemented on the `native_setup` method of the `Camera` class to verify virtual permissions before granting access.
+  This extension ensures that components relying on native code can also be subject to the virtual permission model.
+
+#figure(
+  caption: [Redirection component class diagram.],
+  image(width: 85%, "/images/redirection.svg")
+) <redirection_diagram>
+
+===== Method Proxies
+Methods supporting dynamic proxy hooking are redirected by defining inner classes inheriting from `MethodProxy` in the `MethodProxies` class.
+These proxies are eventually injected into the `ActivityManagerStub`,
+replacing plugin apps' calls to their system counterparts with custom implementations of the `call()` method.
+
+The implemented proxies are the following:
+- `CheckPermission`: it first validates host-level permission and then checks the corresponding virtual permission,
+  delegating model access and logic to the management core.
+  
+  #code(caption: [`checkPermission` method proxy implementation.])[
+    #set text(.9em)
+    ```java
+    @Override
+    public Object call(Object who, Method method, Object... args) throws Throwable {
+        final String permission = (String) args[ARG_PERMISSION];
+        final int vuid = getVUid();
+        if (vuid != getBaseVUid()) {
+            // android.os.UserHandle.getAppId(uid) returned the base app id,
+            // although here it's important to preserve userIds.
+            // Restore the VUid for the correct userId, otherwise it would return a
+            // SecurityException for accessing the baseVUid permissions
+            args[ARG_UID] = vuid;
+        }
+        final int uid = (int) args[ARG_UID];
+
+        // Check host permission first
+        args[ARG_UID] = getRealUid();
+        final int hostStatus = (int) method.invoke(who, args);
+        if (hostStatus == PackageManager.PERMISSION_DENIED) {
+            VLog.e(TAG, "Checking permission '%s' for uid=%d: permission is denied for host",
+                    permission, uid);
+            return PackageManager.PERMISSION_DENIED;
+        }
+
+        final int status = VPermissionManager.get().checkPermission(permission, uid);
+        VLog.d(TAG, "Checking permission '%s' for uid=%d: permission %s", permission, uid,
+                status == PackageManager.PERMISSION_GRANTED
+                    ? "GRANTED"
+                    : "DENIED");
+        return status;
+    }
+    ```
+  ]
+
+- `StartActivity`: it identifies actions matching ACTION_REQUEST_PERMISSION and redirects permission requests to the user interaction component.
+  It ensures that all permission requests from virtual apps are intercepted,
+  whether started via API calls or intents.
+
+  #code(caption: [Code redirecting the permission request to `GrantPermissionsActivity`.])[
+    #set text(.9em)
+    ```java
+    private void handlePermissionRequest(final Intent intent, final IBinder token) {
+        final Context appContext = VActivityManager.get().getActivityRecord(token).activity;
+        final ApplicationInfo applicationInfo = appContext.getApplicationInfo();
+        final int stringId = applicationInfo.labelRes;
+        final String appName = stringId == 0
+            ? applicationInfo.nonLocalizedLabel.toString()
+            : appContext.getString(stringId);
+
+        intent.putExtra(GrantPermissionsActivity.EXTRA_APP_NAME, appName);
+        intent.putExtra(GrantPermissionsActivity.EXTRA_APP_UID, getVUid());
+        intent.setComponent(new ComponentName(getHostContext(),
+                    GrantPermissionsActivity.class));
+    }
+    ```
+  ]
+
+- `GetContentProvider`: it adds a generalized check on read and write permissions for getting a content provider by using the `checkContentProviderPermission` method,
+  which mirrors the equivalent in the Android API.
+
+  #code(caption: [Permission checking flow for general content provider retrieval.])[
+    #set text(.85em)
+    ```java
+    private String checkContentProviderPermission(ProviderInfo cpi, int callingPid, int callingUid) {
+        final VPermissionManager permissionManager = VPermissionManager.get();
+        if (cpi.readPermission == null && cpi.writePermission == null) {
+            return null;
+        }
+        if (permissionManager.checkPermission(cpi.readPermission, callingUid)
+                == PackageManager.PERMISSION_GRANTED) {
+            return null;
+        }
+        if (permissionManager.checkPermission(cpi.writePermission, callingUid)
+                == PackageManager.PERMISSION_GRANTED) {
+            return null;
+        }
+        return "Permission Denial: opening provider " + cpi.name
+                + " from (pid=" + callingPid + ", uid=" + callingUid + ")"
+                + " requires " + cpi.readPermission + " or " + cpi.writePermission;
+    }
+
+    @Override
+    public Object call(Object who, Method method, Object... args) throws Throwable {
+        String name = (String) args[ARG_NAME];
+        int userId = VUserHandle.myUserId();
+        ProviderInfo info = VPackageManager.get().resolveContentProvider(name, 0, userId);
+        if (info == null) {
+            final ProviderInfo cpi = getPM().resolveContentProvider(name, PackageManager.GET_META_DATA);
+            final int pid = VBinder.getCallingPid();
+            final int uid = VBinder.getCallingUid();
+            final String msg = checkContentProviderPermission(cpi, pid, uid);
+            if (msg != null) {
+                throw new SecurityException(msg);
+            }
+        }
+        // ...
+    }
+    ```
+  ]
+
+===== Content Providers Permission Enforcement
+To maintain precise control over content provider access,
+individual content providers methods are patched.
+All operations are redirected to enforce permissions before execution,
+as detailed in @content_provider_ops.
+
+To achieve this,
+an `enforcePermissions()` method is invoked before performing any operation.
+Depending on whether the operation involves reading or writing restricted data,
+the method delegates checks to either `enforceReadPermission()` or `enforceWritePermission()`.
+Both methods closely mirror their Android system counterparts,
+generating similar error messages when access is denied.
+
+This approach allows the system to enforce permissions consistently across all interactions with content providers,
+ensuring that virtual apps cannot bypass restrictions in any way.
+
+#code(caption: [`enforcePermissions` implementation, for checking content providers.])[
+  #set text(.85em)
+  ```java
+  private int enforcePermissions(final String method, final Object[] args, final int start)
+          throws OperationApplicationException {
+
+      if (args != null && args.length > start && args[0] != null && args[start] != null
+              && args[0] instanceof android.content.AttributionSource accessAttributionSource
+              && args[start] instanceof Uri uri) {
+          return switch (method) {
+              case "query", "canonicalize", "uncanonicalize", "refresh" ->
+                  enforceReadPermission(accessAttributionSource, uri);
+              case "insert", "bulkInsert", "delete", "update" ->
+                  enforceWritePermission(accessAttributionSource, uri);
+              case "applyBatch" -> {
+                  final var operations = (ArrayList<ContentProviderOperation>) args[start + 1];
+                  for (final var operation : operations) {
+                      if (operation.isReadOperation()) {
+                          if (enforceReadPermission(accessAttributionSource, uri)
+                                  != PackageManager.PERMISSION_GRANTED) {
+                              throw new OperationApplicationException("App op not allowed", 0);
+                          }
+                      }
+                      if (operation.isWriteOperation()) {
+                          if (enforceWritePermission(accessAttributionSource, uri)
+                                  != PackageManager.PERMISSION_GRANTED) {
+                              throw new OperationApplicationException("App op not allowed", 0);
+                          }
+                      }
+                  }
+                  yield PackageManager.PERMISSION_GRANTED;
+              }
+              default -> PackageManager.PERMISSION_GRANTED;
+          };
+      }
+      return PackageManager.PERMISSION_GRANTED;
+  }
+  ```
+] <content_provider_ops>
+
+===== Camera Patch
+To enforce permissions in native-level camera operations,
+a patch is applied to the `native_setup()` method of the `Camera` class.
+This ensures that permission checks are performed before any camera access is granted,
+integrating seamlessly with the virtual permission model.
+
+The patch utilizes the native management core compatibility layer,
+specifically the `enforcePermission()` function,
+to validate the Camera permission.
+Instead of returning the camera ID,
+the patched method returns an error code:
+`android::OK` on success or a failure code if the permission check fails.
+This behavior aligns with standard error-handling conventions in native Android systems.
+
+@native_patch showcases the implementation of the method patch.
+#code(caption: [`native_setup` native method patch.])[
+  #set text(.85em)
+  ```cpp
+  static jint new_native_cameraNativeSetupFunc_T5(JNIEnv *env, jobject thiz, jobject cameraThis,
+                                                  jint cameraId, jstring packageName,
+                                                  jboolean overrideToPortrait,
+                                                  jboolean forceSlowJpegMode) {
+
+      int rc = enforcePermission(env, "android.permission.CAMERA");
+      if (rc != android::OK) {
+        return rc;
+      }
+      jstring host = env->NewStringUTF(patchEnv.host_packageName);
+      return patchEnv.orig_native_cameraNativeSetupFunc.t5(env, thiz, cameraThis, cameraId, host,
+                                                           overrideToPortrait, forceSlowJpegMode);
+  }
+  ```
+] <native_patch>
