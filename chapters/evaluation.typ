@@ -87,9 +87,37 @@ especially when the system interacts with core functionalities,
 such as networking, that bypass the traditional permission model.
 
 == Real-World Example
-To complement this,
-Telegram was chosen as a real-world application to evaluate the model's performance in practical scenarios.
-Given its extensive use of various permissions,
-it provided a suitable case for testing real-world applicability.
-Particular emphasis was placed on the camera permission,
-which allowed an assessment of how effectively the model could restrict access to sensitive resources in an actual use case.
+To complement the controlled testing with the custom _TestApp_,
+the real-world application _Telegram_ was selected for evaluating the virtual permission model's performance in practical scenarios,
+mainly for two reasons:
++ Complexity: it is a feature-rich application that extensively uses permissions,
+  including access to the camera, microphone, location, and many other.
+  This makes it a robust test case for evaluating the virtual permission model's ability to handle real-world apps behavior.
++ Compatibility: among the complex applications tested in VirtualXposed,
+  Telegram emerged as one of the few capable of running successfully.
+  Many other apps had limited compatibility, experienced crashes, or were unable to launch at all.
+
+The evaluation of Telegram in the virtual environment produced the following positive results:
+- Permission checks and requests: direct permission checks and all permission requests requests behaved as expected.
+  The system returned accurate messages for permission states,
+  as if the app were running in a standard Android environment,
+  with error messages correctly displayed when permissions were denied in the virtual model.
+- Content provider permissions: the model successfully enforced permissions for content providers.
+  For example, operations involving contacts (e.g., reading or writing) were verified to work correctly with appropriate permission checks.
+- Camera permission: the native camera patch,
+  described in @redirection, was verified as working.
+  Attempts by Telegram to access the camera without proper permissions resulted in a black screen,
+  demonstrating that the patch effectively blocked access by intercepting native calls and enforcing permission checks.
+
+Despite these successes, a critical flaw was identified:
+if Telegram or any other app ignored a `PERMISSION_DENIED` response and attempted to acquire a restricted resource anyway,
+the resource was granted without raising an exception.
+This issue reveals a limitation in the model's enforcement mechanism:
+while the redirection component effectively manages straightforward, direct requests for permissions,
+it struggles with cases where permission checks are handled within other operations or bypassed internally by the app.
+
+Manual solutions,
+like the camera and content provider patches,
+address some of these gaps but do not provide complete coverage.
+A more comprehensive, universal system is needed to enforce permissions reliably,
+even for indirect or bypassed requests---something this model does not currently provide.

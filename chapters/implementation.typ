@@ -935,7 +935,7 @@ represented in @user_interaction_settings_diagram:
     ```
   ]
 
-=== Redirection Component
+=== Redirection Component <redirection>
 ==== Design
 The redirection component is necessary to allow communication between virtual apps and the virtual permission model.
 Virtual apps may either directly invoke Android's permission management APIs or execute operations that inherently trigger permission checks within their code.
