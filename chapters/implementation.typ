@@ -466,6 +466,11 @@ providing a simple interface for other components to access and modify the permi
 // TODO: state persistence
 ==== Implementation
 
+#figure(
+  caption: [State persistence component class diagram.],
+  image("/images/state-persistence.svg")
+) <state_persistence_diagram>
+
 === Management Core Component
 ==== Design
 The _management core_ provides essential operations for handling permission states.

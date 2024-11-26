@@ -47,7 +47,7 @@ The following chapters cover the context, design, and evaluation of this work:
   then summarizes a high-level architecture of its AOSP implementation.
 
 - @implementation presents the design and implementation of the custom permission model for virtual apps,
-  addressing challenges with permission isolation within VirtualXposed.
+  splitting the analysis in multiple, logical components.
 
 - @evaluation presents the evaluation of the model in the implemented cases,
   using both test cases and real-world applications.
