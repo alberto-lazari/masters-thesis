@@ -486,7 +486,6 @@ The main responsibilities of this components are:
 
 - Handling exceptions or special cases for specific permissions.
 
-// TODO: native compatibility layer
 ==== Implementation
 The component is implemented as a single service in the virtualization framework,
 inspired by Android's `PermissionManager`.
@@ -877,7 +876,7 @@ represented in @user_interaction_settings_diagram:
   It could also support install-time permissions out of the box,
   but this deviates from Android's model design.
 
-	Just like `PermissionsActivity`, the activity replaces its content with a `PermissionsFragment` in its `onCreate()` method.
+  Just like `PermissionsActivity`, the activity replaces its content with a `PermissionsFragment` in its `onCreate()` method.
   The fragment categorizes permissions into four groups, based on permissions' state and type:
   - Allowed: granted to the app.
 
@@ -980,7 +979,7 @@ replacing plugin apps' calls to their system counterparts with custom implementa
 The implemented proxies are the following:
 - `CheckPermission`: it first validates host-level permission and then checks the corresponding virtual permission,
   delegating model access and logic to the management core.
-  
+
   #code(caption: [`checkPermission` method proxy implementation.])[
     #set text(.9em)
     ```java
