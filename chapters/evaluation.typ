@@ -45,6 +45,19 @@ providing easy interaction and immediate visual feedback:
   and that the system responds properly to multiple requests at once,
   displaying the appropriate dialogs for each permission.
 
+#grid(
+  columns: (1fr, 1fr),
+  inset: 1.5em,
+  figure(
+    caption: [Permission check view.],
+    image("/images/testapp/permission-check.png")
+  ),
+  figure(
+    caption: [A permission request dialog.],
+    image("/images/testapp/permission-request.png")
+  )
+)
+
 === ContactsActivity
 The `ContactsActivity` is designed to test the permission control mechanisms applied to content providers,
 specifically the _Contacts_ content provider.
@@ -70,6 +83,19 @@ All operations include exception handling to catch and log any `SecurityExceptio
 This ensures permission errors cause an explicit feedback,
 facilitating the identification of inconsistencies.
 
+#grid(
+  columns: (1fr, 1fr),
+  inset: 1.5em,
+  figure(
+    caption: [_TestApp_ reading a contact.],
+    image("/images/testapp/mario.png")
+  ),
+  figure(
+    caption: [Operation denied for virtual _TestApp_.],
+    image("/images/testapp/no-permission.png")
+  )
+)
+
 === InternetActivity
 The `InternetActivity` tests the app's behavior when attempting to perform a network operation,
 specifically fetching data from a web page.
@@ -85,6 +111,19 @@ such as networking, which are outside the scope of simple permission checks and 
 This behavior demonstrates that permission redirection alone is not able to fully address the needs of a virtual permission management model,
 especially when the system interacts with core functionalities,
 such as networking, that bypass the traditional permission model.
+
+#grid(
+  columns: (1fr, 1fr),
+  inset: 1.5em,
+  figure(
+    caption: [Internet permission denied on native Android.],
+    image("/images/testapp/internet-denied.png")
+  ),
+  figure(
+    caption: [Permission not denied, even when not in manifest.],
+    image("/images/testapp/internet.png")
+  )
+)
 
 == Real-World Example
 To complement the controlled testing with the custom _TestApp_,
@@ -121,3 +160,16 @@ like the camera and content provider patches,
 address some of these gaps but do not provide complete coverage.
 A more comprehensive, universal system is needed to enforce permissions reliably,
 even for indirect or bypassed requests---something this model does not currently provide.
+
+#grid(
+  columns: (1fr, 1fr),
+  inset: 1.5em,
+  figure(
+    caption: [Camera resource denied in the virtual environment.],
+    image("/images/testapp/camera-denied.png")
+  ),
+  figure(
+    caption: [Telegram restricting Gallery, although it could easily access it without permission.],
+    image("/images/testapp/telegram-denied.png")
+  )
+)
