@@ -53,7 +53,7 @@ This design enables features such as:
 
 -	Sandboxed environments: enabling apps to run within a more restricted and controlled environment for enhancing security and research.
 
--	Dynamic patches: applying hotfixes or updates to a virtualized environment without modifying the main system.
+-	Dynamic patches: applying hotfixes or updates to a virtualized environment without modifying the main system @virtualpatch.
 
 == Android Architecture
 The Android architecture consists of many layered components that interact to provide essential features.
@@ -170,10 +170,11 @@ Currently, Xposed has been discontinued and replaced by newer implementations,
 such as LSPosed @lsposed and EdXposed @edxposed.
 Additionally, root access has been progressively limited and discouraged in the Android OS over the course of time.
 
-VirtualXposed aim is to bring this functionality to unrooted devices by creating a virtualized environment,
+VirtualXposed @virtualxposed is a project designed to bring this functionality to unrooted devices by creating a virtualized environment,
 recreating the Xposed experience within a sandboxed space.
-It uses VirtualApp at its core to install and run apps in a virtual environment,
-injecting hooks at the application level.
+It uses VirtualApp @virtualapp at its core,
+which is one of the most popular open-source app-level virtualization frameworks.
+It is used to create a virtual environment and run apps inside of it by injecting hooks at the application layer.
 VirtualXposed is thus limited to modifying the virtual app behavior rather than system-wide functions.
 
 Over recent version updates,

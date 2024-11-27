@@ -23,7 +23,7 @@ highlighting both app-level and OS-level approaches and their impact on the ecos
 App-level virtualization,
 while providing a lightweight and flexible approach,
 introduces several significant security challenges due to the lack of robust isolation between virtualized applications and the host system.
-These concerns have been extensively analyzed in prior research works @parallel_space_traveling @app_in_the_middle,
+These concerns have been extensively analyzed in prior research works @parallel_space_traveling @app_in_the_middle @android_plugin,
 with the primary issues being outlined in the following subsections.
 
 === Same UID Across Apps
@@ -83,7 +83,7 @@ However, the concept remains influential in discussions around Android app secur
 == OS-Level Virtualization
 OS-level virtualization frameworks provide a stronger alternative to app-level virtualization by offering enhanced isolation and security guarantees.
 Key projects in this domain include:
-- VPDroid @vpdroid and Cells @cells: these are older, pioneering solutions focused on virtualization for Android systems,
+- VPDroid @vpdroid and Cells @cells: these are older, pioneering virtualization solutions,
   focused on isolated execution environments to ensure app separation and control over resource access.
   They laid the ground for many of the concepts used in modern Android virtualization.
 - VPBox @vpbox: a recent solution to address some core challenges observed in app-level virtualization,
