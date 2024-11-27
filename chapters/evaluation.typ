@@ -1,4 +1,4 @@
-#set image(height: 50%)
+#set image(height: 46%)
 
 = Evaluation <evaluation>
 The evaluation of the virtual permission model was performed using two distinct methods:
