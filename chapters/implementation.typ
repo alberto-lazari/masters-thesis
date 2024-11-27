@@ -223,13 +223,30 @@ Examples of typical fixes are the following:
     ```
   ] <parameter_add>
 
-// TODO: build system update
 === Build System Update
-- Compilation fixes
-- Support for latest Java language features
-- Gradle upgrade, to support more recent versions of libraries
-- Switch to androidx APIs
-- Library disappeared from maven repositories embedded in the project
+The removal of a required dependency from Maven repositories prompted the need to update the build system for the project.
+Fortunately, since the missing dependency was open-source,
+it was possible to compile it manually and embed it locally into the project.
+However, this necessitated an update to the build toolchain,
+which, in turn, required broader updates to several outdated project components:
+- The Gradle build system was updated to support more recent Android plugin and wrapper versions.
+  This also introduced an automatic method for selecting the JDK to use for compilation,
+  which had previously needed to be set manually in the environment.
+  The update significantly improved compilation speed and overall user experience,
+  while also triggering the need for additional changes across the project.
+- Dependencies were fixed by compiling the missing one and setting it for local use.
+- The project was migrated to AndroidX libraries,
+  replacing older support libraries.
+  This operation required extensive refactoring across the large codebase
+  and enabled the use of newer components and dependencies versions,
+  which were previously tied to the old libraries.
+- Java language support was updated,
+  as the VirtualApp component was previously still using Java 7.
+  The new setup now supports the latest Java features,
+  including functional interfaces and switch expressions.
+
+These updates were essential for improving the development environment,
+making it more efficient to use and easier to manage overall.
 
 === Multi-User UID System
 One of the main features of VirtualApp is the possibility to install multiple copies of a same application.
