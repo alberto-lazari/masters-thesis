@@ -1,19 +1,24 @@
 #v(1cm)
 
 = Abstract
-Android app-level virtualization is a technique that allows Android apps to run within isolated environments,
-provided by a regular application.
-Existing implementations lack a dedicated virtual permission management,
-causing virtual apps to inherit all of host app's permissions,
-which compromises granular control and security when multiple apps are installed into a single host.
+Android app-level virtualization allows Android apps to run in isolated environments within a host app.
+However, existing virtualization solutions lack a dedicated virtual permission management system,
+which creates a significant security concern.
+When the host app requests a permission,
+it is granted for all virtual apps running within it,
+even if those virtual apps do not require or should not have access to that permission.
+This happens because the host app is the one requesting permissions,
+and virtual apps inherit them,
+without undergoing their own individual permission checks in the virtual environment.
+As a result, they may gain unintended access to sensitive resources,
+particularly when multiple virtual apps share the same host.
 
-This thesis examines the complex and evolving Android permission model---which has undergone extensive updates throughout the OS's development---and presents a custom model
-that emulates Android's native permission management behavior and enables permission checking and management for virtual apps.
-It does so by extending an established virtualization framework with hooks on system services calls,
-in order to enforce permissions on virtual apps using this custom virtual permission model.
-Additionally, examples of permission checking implementation for specific services are provided,
-evaluating the results using both a test and a real-world application.
+The implementation builds upon an existing virtualization framework,
+redirecting permission-related operations to this custom model,
+enabling fine-grained permission management for virtual apps.
+The evaluation proves that this approach successfully enforces permissions for basic use cases and specific features,
+treating virtual apps individually.
 
-Finally, this work addresses the challenges involved in creating an automated, generic solution,
-capable of managing permission checks for all methods an app may invoke.
-It examines and motivates the underlying issues and explores a potential future direction that could be employed as a step towards a more universal solution.
+However, the thesis also identifies and motivates significant challenges when scaling this solution to handle more complex interactions.
+These challenges are due to limitations inherent to app-level virtualization in Android's architecture.
+Potential solutions are explored, with an emphasis on their limitations and the need for further refinement.
