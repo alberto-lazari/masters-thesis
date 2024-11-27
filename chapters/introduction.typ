@@ -55,4 +55,4 @@ The following chapters cover the context, design, and evaluation of this work:
 - @discussion discusses the challenges of realizing a universal solution,
   due to how app-level virtualization operates.
 
-- @conclusions sums up the results of the work and suggests a direction for future research by investigating on permission mapping across the latest Android platforms.
+- @conclusion sums up the results of the work and suggests a direction for future research by investigating on permission mapping across the latest Android platforms.

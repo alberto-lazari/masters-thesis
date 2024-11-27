@@ -113,6 +113,7 @@ These components are granted elevated permissions and provide services that user
   they are regular apps that come pre-installed with the system image and can be granted system permissions @privileged_permissions.
   They are installed under a read-only directory, to avoid deletion and modification.
 
+// TODO: expand
 ==== Binder Mechanism
 The Binder mechanism is Android’s core inter-process communication (IPC) system,
 used allow components running in different processes to communicate with each other.

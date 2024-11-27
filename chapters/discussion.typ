@@ -14,6 +14,8 @@ System services typically perform internal permission checks at this stage,
 making the virtualization framework unable to control the result,
 unless specific hooks are implemented for these operations beforehand.
 
+// TODO: diagram?
+
 == Potential Solutions
 While various solutions could address these challenges,
 each has significant limitations.
@@ -33,7 +35,7 @@ and often leads to reimplementing significant portions of their logic.
 Considering the large number of methods and resources that require permission checks,
 this manual approach quickly becomes unmanageable for a large-scale implementation.
 
-=== Reinstantiating System Services
+=== Reinstantiating System Services <services_reimplementation>
 A different approach involves replicating full copies of Android system services directly within the virtualization framework.
 By redirecting all system services requests to these replicated services,
 the virtual permission model could have full control over permission checks.

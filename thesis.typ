@@ -36,6 +36,6 @@
     "implementation",
     "evaluation",
     "discussion",
-    "conclusions",
+    "conclusion",
   ),
 )

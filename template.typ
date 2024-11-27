@@ -69,6 +69,7 @@
     v(.5em)
   }
   set list(marker: ([•], [◦], [--]))
+  // show heading.where(level: 1): set align(right)
 
   {
     set heading(numbering: none)
@@ -119,15 +120,15 @@
           set par(first-line-indent: 0pt)
           if it.numbering != none {
             box(text(
-              size: 100pt,
+              size: 120pt,
               weight: "black",
               fill: accent-color,
               counter(heading).display(it.numbering)))
-              parbreak()
+              v(-.5em)
           }
           smallcaps(text(size: 26pt, it.body))
         })
-        v(2em)
+        v(3em)
       } else if level == 2 {
         v(.5em)
         text(size: 16pt, it)
