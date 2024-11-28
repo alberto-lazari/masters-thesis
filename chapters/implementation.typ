@@ -760,7 +760,6 @@ providing a simple interface for other components to access and modify the permi
 These mechanisms are necessary because virtual apps run in separate processes,
 thus stronger synchronization means like file system locks are necessary to avoid inconsistencies.
 
-// TODO: state persistence
 ==== Implementation
 The component's implementation reflects its design responsibilities by realizing the following classes:
 + File parsing:
