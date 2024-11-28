@@ -757,6 +757,9 @@ using locking mechanisms to prevent conflicts or data corruption.
 It abstracts these complexities,
 providing a simple interface for other components to access and modify the permission state as needed.
 
+These mechanisms are necessary because virtual apps run in separate processes,
+thus stronger synchronization means like file system locks are necessary to avoid inconsistencies.
+
 // TODO: state persistence
 ==== Implementation
 The component's implementation reflects its design responsibilities by realizing the following classes:
@@ -768,7 +771,7 @@ The component's implementation reflects its design responsibilities by realizing
   - `FileLocker`:
     provides low-level functionality for acquiring and releasing shared or exclusive locks on files,
     ensuring safe operations when multiple processes or threads interact with the same file.
-	- `LockedOperation`:
+  - `LockedOperation`:
     abstracts `FileLocker`'s mechanisms into a higher-level framework,
     defining a lifecycle for file interactions.
 
@@ -796,7 +799,7 @@ The high-level methods, `read()` and `write()`,
 handle the setup for parsing and serialization tasks,
 but delegate most of the actual work to dedicated helper methods.
 
-Here's a description of the defined operations:
+Here follows a description of the defined operations:
 - XML parsing (`read()`):
   the method initializes the XML structure by reading from an input stream,
   identifying `<app>` elements for each UID,
@@ -808,6 +811,77 @@ Here's a description of the defined operations:
   appending them as `<app>` elements.
   It uses the `addPermissions()` helper method to create and structure XML nodes for each permission type.
   The serialized output is then transformed and written to an output stream.
+
+===== Concurrent Access Management
+The two classes implementing concurrent access to the permission file are layered,
+to address the task from different abstraction levels.
+
+Following is a description of the practical solutions used by the classes to ensure atomic file operations:
+- `FileLocker`:
+  the class supports two different types of locking mechanisms:
+  + Shared locks: these allow concurrent read operations by multiple threads or processes.
+
+  + Exclusive locks: these prevent any other access (read or write) to the file while the lock is held,
+    ensuring safe write operations.
+
+  It provides a generic interface to perform locked operations on a file,
+  while holding one of the two possible locks.
+  These operations are passed to one of the two public methods defined in the class:
+  `performWithSharedLockOn(File file, Function operation)` and  `performWithExclusiveLockOn(File file, Function operation)`.
+
+  Internally, the private methods in `FileLocker` handle the specific steps required to safely manage file locks.
+  These encapsulate the low-level logic to support the functionality provided by the public methods.
+  Here is a breakdown of the general sequence of events:
+  + A lock is acquired for the file channel,
+    using either `acquireSharedLockFor(FileChannel channel)` or `acquireExclusiveLockFor(FileChannel channel)`.
+  + Once the lock is acquired,
+    the method executes the provided operation.
+    This ensures that file operations happen safely without interference from other threads or processes.
+  + To avoid resource contention or deadlocks,
+    the private methods explicitly release the acquired lock as soon as the operation is completed.
+    This is handled in a `finally` block to guarantee the lock is released even if the operation throws an exception.
+  + All the steps above are wrapped inside robust error handling blocks,
+    to manage cases where lock acquisition fails,
+    such as when the file is inaccessible or already locked.
+
+- `LockedOperation`:
+  it abstracts the locking mechanisms provided by `FileLocker` into a higher-level framework.
+  Its implementation focuses on managing the workflow of loading and saving the state.
+  Here is how it achieves this through its methods:
+  - `init(Runnable onFileCreate)`:
+    ensures the file exists and sets up the necessary preconditions for locked operations.
+    If the file is missing,
+    it invokes the provided `onFileCreate` callback to initialize an empty state.
+    This method must be called manually during the system's initialization phase to set up the file for subsequent operations.
+
+  - `read(Supplier operation)`:
+    acquires a shared lock via `FileLocker`,
+    enabling safe read access to the file without blocking other readers,
+    then executes the given operation within the lock's scope,
+    ensuring consistent state retrieval.
+
+  - `update(Supplier<T> operation)`:
+    uses an exclusive lock to guarantee write safety.
+    It applies the provided operation while ensuring no other process or thread can read or write to the file during the update.
+
+  - `load()` and `save()`:
+    they handle the detailed file interactions during read and update operations.
+    These methods are implemented by subclasses and tailored to their specific state persistence needs.
+
+  - `ensureLoaded()`:
+    verifies whether the file's last modification timestamp has changed since the previous read,
+    before loading the state.
+    If the timestamp---stored in `fileLastRead`---indicates that the file has been updated externally,
+    it invokes `load()` to refresh the in-memory state.
+    Otherwise, no action is taken, avoiding unnecessary file accesses.
+
+  - `persist()`:
+    ensures the in-memory state is saved back to the file system by invoking `save()`.
+    Once the operation completes successfully,
+    it updates `fileLastRead`,
+    to ensure that subsequent checks correctly reflect the file's current state.
+
+===== `PermissionCache`
 
 
 === Management Core Component
