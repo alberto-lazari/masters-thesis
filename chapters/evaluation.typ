@@ -51,11 +51,11 @@ providing easy interaction and immediate visual feedback:
   columns: (1fr, 1fr),
   inset: 1.5em,
   figure(
-    caption: [Permission check view.],
+    caption: [Permission check view inside the virtual environment.],
     image("/images/testapp/permission-check.png")
   ),
   figure(
-    caption: [A permission request dialog.],
+    caption: [A virtual permission request dialog.],
     image("/images/testapp/permission-request.png")
   )
 )

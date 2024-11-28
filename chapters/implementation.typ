@@ -439,7 +439,6 @@ that is, they can be assigned a status diverging from their current group's stat
 This provides more granularity on user's permission control,
 but still partially aligning to Android's model.
 
-// TODO: group icons
 ===== Permission groups
 They reference multiple runtime permission records and are used to reduce the dependency from Android register APIs.
 Their possible state can be:
@@ -462,8 +461,286 @@ The state model organizes permissions into hierarchical collections:
 
 - Permissions per user: set of UID permissions for apps installed for a virtual user.
 
-// TODO: state model
 ==== Implementation
+The component consists of a hierarchy of classes, inheriting from the abstract `Permission` base class,
+and of a UID permissions container called `AppPermissions`.
+The three permission types have a dedicated class each,
+specializing the base implementation of `Permission`.
+
+#figure(
+  caption: [State model component class diagram.],
+  image("/images/components/state-model.svg")
+) <state_model_diagram>
+
+===== `Permission`
+This class serves as the abstract base for managing permissions in the state model.
+It is meant to be extended by the concrete permission types,
+providing a flexible interface for permission management.
+This abstraction ensures safe and robust permission states handling, validation, and transitions,
+while simplifying integration with the management core component.
+
+This class also simplifies interactions with the state persistence,
+providing utility methods for simplifying its tasks by hiding the complexity of the permission state logic.
+
+The main features it provides are:
+- `PermissionStatus` enum:
+  defines the possible states a permission can assume:
+  - `GRANTED`: the permission has been permanently granted.
+
+  - `ALWAYS_ASK`: the permission is set to always prompt for user approval or it was granted for the current session.
+
+  - `UNREQUESTED`: the permission has not yet been requested.
+
+  - `DENIED`: the permission has been permanently denied,
+    either by the user or via system settings.
+
+- Constructors:
+  they support various initialization scenarios:
+  - Create permission instances with a name and status (as an enum or string).
+
+  - Duplicate an existing permission.
+
+  - Validate inputs,
+    ensuring that the initial state complies with the specific permission type's constraints.
+
+- Logic methods:
+  they encapsulate the logic behind possible permission states and status transitions:
+  - `boolean isGranted()`:
+    check if the permission is currently granted,
+    based on its status and other possible state parameters.
+
+  - `boolean isValidStatus(Status status)`:
+    designed to check whether a status can be assigned to the permission,
+    considering its type and current state.
+
+  - `ensureStatusValid()`:
+    ensures the status is consistent,
+    throwing an exception if invalid.
+
+- Getter and setter methods:
+  - `String getName()`:
+    returns the name of the permission.
+
+  - `Status getStatus()`:
+    returns the current status of the permission.
+
+  - `setStatus(String newStatus)`:
+    allows setting the permission's status,
+    ensuring that status transitions are valid.
+
+- Helper methods:
+  - `getReadableName()`:
+    formats the permission name into a user-friendly representation,
+    ideal for displaying it in the UI.
+
+  - `statusToString()`:
+    converts the current status to a string representation,
+    useful for supporting the serialization process.
+
+  - `setStatusFromString(String statusString)`:
+    sets the permission's status based on a string input,
+    ensuring that the value represents a valid status.
+    It is used to support the parsing process.
+
+===== `InstallPermission`
+This is a concrete implementation of the `Permission` base class,
+used to model install-time permissions.
+The only notable distinction of this class lies in its overridden `isValidStatus()` method,
+which restricts valid states to `GRANTED` and `DENIED`.
+This reflects the simplicity of install-time permissions' binary state,
+as noted in the design.
+
+No additional functionality or methods are introduced,
+as the straightforward design of install-time permissions requires no further features beyond the `Permission`'s class capabilities.
+
+===== `RuntimePermission`
+The `RuntimePermission` class is a detailed specialization over the base class.
+Since runtime permissions are inherently much more complex than install-time permissions,
+the class introduces several specific concepts:
+- Flags for complex state modeling: inspired by Android's implementation,
+  runtime permissions model additional status modifiers with a set of flags,
+  composed in the `flags` field to allow multiple combinations,
+  which would need several dedicated enum values to be represented as the main status.
+  The possible flags are:
+  - `FLAG_DENIED_ONCE`: indicates that the permission has been rejected in the last user interaction.
+    This flag helps determine whether the app should display a rationale when requesting the permission again.
+
+  - `FLAG_GRANTED_ONCE`: indicates that the permission has been granted for the session,
+    useful for handling cases where permissions are granted temporarily.
+
+  - `FLAG_OVERRIDE`: indicates that the permission's behavior overrides its group's status,
+    allowing for individual permission control.
+
+- Permission group integration:
+  runtime permissions are associated with a `PermissionGroup`.
+  This can simplifies state management,
+  giving a direct access to the group's status,
+  which is necessary to fully evaluate the actual runtime permission status.
+  Additionally, it is useful for supporting cases where group information is more relevant,
+  such as in permission dialogs which show the group's icon and description.
+
+  To provide support for this concept the class includes:
+  - A nullable `group` private field, accessible with its `getGroup()`.
+
+  - `boolean hasPermissionGroup()`: determines whether the runtime permission is within a group.
+
+  - `int getGroupIconRes()`: returns the resource id of the permission's group icon,
+    used by the user interaction component.
+
+- Enhanced state management:
+  - `boolean isValidStatus()`: implements the abstract method to validate the consistency between the permission's status and its group's status,
+    managing edge cases such as temporary grants (`ALWAYS_ASK`) in conjunction with group overrides.
+
+  - `boolean isGranted()`: overrides the default implementation,
+    by accounting for additional cases that depend on group's status and temporary grants.
+
+    #code(caption: [`isGranted` method implementation for runtime permissions.])[
+      ```java
+      @Override
+      public boolean isGranted() {
+          return switch (status) {
+              case Status.GRANTED -> isOverridden() || group.isGranted();
+              case Status.ALWAYS_ASK -> isGrantedOnce()
+                  || ( hasPermissionGroup() && group.isGranted() );
+              default -> false;
+          };
+      }
+      ```
+    ]
+
+  - `shouldShowPermissionRationale()`, `isGrantedOnce()`, and `isOverridden()` return the current status of the relative flags,
+    while `setDeniedOnce()`, `grantOnce()`, `override()`, and `followGroup()` allow for setting---or unsetting, in the case of `followGroup()`---a specific flag.
+
+    #code(caption: [Method returning the current status of a flag.])[
+      ```java
+      public boolean shouldShowRequestPermissionRationale() {
+          return (flags & FLAG_DENIED_ONCE) != 0;
+      }
+      ```
+    ]
+
+    #code(caption: [`grantOnce` method, updating the status and setting a flag.])[
+      ```java
+      public void grantOnce() {
+          setStatus(Status.ALWAYS_ASK);
+          flags |= FLAG_GRANTED_ONCE;
+      }
+      ```
+    ]
+
+  - `statusToString()` and `setStatusFromString()` extend the base class's functionality to handle serialization and parsing of flags,
+    ensuring an exhaustive state representation.
+
+- Utility methods:
+  - `boolean needsRequestDialog()`:
+    determines whether a permission dialog should be displayed for requesting the permission,
+    based on the current complete state.
+
+  - `boolean hasBackgroundPermission()`:
+    checks if a runtime permission has an associated background permission,
+    mainly used to determine the dialog buttons to display.
+
+===== `PermissionGroup`
+The `PermissionGroup` class provides a higher-level abstraction for managing sets of related runtime permissions.
+It enables a hierarchical approach to permission management,
+where permissions can inherit or override the group's status.
+
+The class is mostly used in the user interaction,
+to retrieve informations such as its display icon.
+It is also used when granting on revoking a batch of permissions,
+for example when denying a group from the settings.
+
+The following are its main features:
+-	Permission aggregation:
+  it stores a set of associated runtime permissions in its `permissions` private field,
+  providing a mapping from groups to individual permissions.
+  It defines two simple methods to manage this set:
+  +	`Set getPermissions()`:
+    returns a shallow copy of the group's permissions.
+    This avoids returning a direct reference to the internal set,
+    but allows management for the individual permissions as they still reference the original ones.
+
+  +	`addPermission(RuntimePermission permission)`:
+    adds a runtime permission to the group,
+    but only if it's not a background permission,
+    because those need to be managed individually.
+    If not, granting the foreground permission would also grant access to the background one automatically,
+    being defined in the same group.
+
+-	Group icon retrieval:
+  the class provides a method to fetch the group's icon from Android's official resources,
+  using `getGroupIconRes()` to get access to the internal names.
+  Permission groups icons follow a mostly consistent naming pattern (`perm_group_$groupName`),
+  so their retrieval can be somewhat automated in the implementation of `getGroupIconRes(String group)`,
+  shown in @group_icon_res.
+
+  #code(caption: [`getGroupIconRes` method implementation, providing an algorithm to retrieve the original permission groups icons.])[
+    ```java
+    public static int getGroupIconRes(final @Nullable String group) {
+        final var resources = VirtualCore.get()
+            .getContext()
+            .getResources();
+        final int defaultId = resources
+            .getIdentifier("ic_perm_device_info", "drawable", "android");
+        if (group == null) {
+            return defaultId;
+        }
+        final var groupName = group
+            .replaceAll("[a-z0-9.-]*", "")
+            .toLowerCase();
+        // Handle exceptions
+        final var res = switch (groupName) {
+            case "phone" -> "perm_group_phone_calls";
+            case "notifications" -> "ic_notifications_alerted";
+            default -> "perm_group_" + groupName;
+        };
+        final int id = resources.getIdentifier(res, "drawable", "android");
+        if (id == 0) {
+            // Use default permission icon if id not found
+            return defaultId;
+        }
+        return id;
+    }
+    ```
+  ] <group_icon_res>
+
+===== `AppPermissions`
+The `AppPermissions` class provides a container for managing and interacting with all permissions associated with a specific UID.
+
+Here's a concise summary of its functionality:
+- Permission storage:
+  the class maintains a map in its `permissions` private field,
+  where each permission is keyed by its name for quick lookups and efficient management.
+
+- Access and filtering:
+  - `Map getAll()`:
+    returns a direct reference to all stored permissions.
+
+  - `Map getAll(Class type)`:
+    returns a filtered map of all permissions of a specific type.
+    For example, it can be used to retrieve a complete map of all runtime permissions with `getAll(RuntimePermission.class)`.
+
+  #code(caption: [`getAll(type)` method implementation, filtering permissions by type.])[
+    ```java
+    public <T extends Permission> Map<String, T> getAll(final Class<T> type) {
+        return permissions.entrySet()
+            .stream()
+            .filter(entry -> type.isInstance(entry.getValue()))
+            .collect(Collectors.toMap(Map.Entry::getKey, entry -> (T) entry.getValue()));
+    }
+    ```
+  ]
+
+  - `Permission getPermission(String permissionName)`:
+    returns a specific permission by name.
+
+- Permission updates:
+  - `updatePermission(Permission newPermission)`:
+    replaces a permission in the map with a new instance if a matching permission,
+    identified by name and type,
+    already exists.
+    This approach ensures the permission is fully updated with the new instance,
+    while maintaining consistency by only modifying declared permissions.
 
 === State Persistence Component
 ==== Design
@@ -847,7 +1124,7 @@ there are two activities managing permission requests:
       image("/images/components/host-permission-alert.png")
     ),
     figure(
-      caption: [Host permission dialog. Notice VirtualXposed name],
+      caption: [Host permission dialog, notice VirtualXposed's name],
       image("/images/components/host-permission-request.png")
     ),
     figure(

@@ -168,14 +168,10 @@ certain permissions and states combinations arise some peculiarities:
     or for background access too.
 
   - Android 12 introduced the possibility for users to choose between granting coarse or fine location access.
-    It presents a different dialog based on the current state and permissions that are being requested,
+    As shown in @new_location_dialog,
+    it presents a different dialog based on the current state and permissions that are being requested,
     allowing to request the coarse location and then upgrade to the more precise version,
     or request both at the same time and let the user decide.
-
-#figure(
-  caption: [The new location permissions request dialog.],
-  image(height: 60%, "/images/cool-location-request.png")
-)
 
 - Background permissions: with the introduction of the tristate location permissions on Android 10,
   background permissions appeared for the first time.
@@ -189,6 +185,11 @@ certain permissions and states combinations arise some peculiarities:
 Analyzing these behaviors is essential for understanding how Android's permission model affects app interactions with permissions.
 This analysis was also useful for developing a consistent behavior for the virtual permission model,
 that is presented in later chapters.
+
+#figure(
+  caption: [The new location permissions request dialog.],
+  image(height: 45%, "/images/cool-location-request.png")
+) <new_location_dialog>
 
 == Implementation
 As discussed in previous sections,
@@ -221,7 +222,7 @@ providing a comprehensive---although simplified---view of how the system operate
 
 #figure(
   caption: [Simplified architecture of the permission model's classes.],
-  image("/images/system-classes.svg")
+  image(width: 88%, "/images/system-classes.svg")
 ) <system_classes_diagram>
 
 // TODO: code references?
@@ -265,7 +266,7 @@ and retrieve information about installed packages and their declared permissions
 
 Additionally, its `mRegistry` field manages an internal storage of information about all known permissions in the system and their related settings.
 
-==== RuntimePermissionsPersistenceImpl
+==== `RuntimePermissionsPersistenceImpl`
 It is the latest implementation responsible for managing runtime permission data persistence.
 It is part of the `PermissionController` Android Pony EXpress (APEX) module that focuses exclusively on permission management,
 and is responsible for reading and writing the state of a user's permissions in its `runtime-permissions.xml` file.
@@ -305,9 +306,9 @@ which are normal permissions.
 ] <permission_xml>
 
 `RuntimePermissionsPersistenceImpl` exposes its features in two public methods:
-+ #raw(lang: "d", "RuntimePermissionsState readForUser(UserHandle user)").
++ `RuntimePermissionsState readForUser(UserHandle user)`.
 
-+ #raw(lang: "d", "void writeForUser(RuntimePermisionsState runtimePermissions, UserHandle user)").
++ `void writeForUser(RuntimePermisionsState runtimePermissions, UserHandle user)`.
 
 ==== `Settings`
 The class dedicated to store system dynamic settings also acts as a link between the `PermissionController` module and system framework APIs.
