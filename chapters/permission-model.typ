@@ -115,9 +115,15 @@ every other permission in its group is immediately denied.
 At a practical level,
 the behavior of permission groups makes permission dialogs more closely tied to the group itself rather than to individual permissions.
 This happens because permission dialogs are promoted when permission groups are unset.
-To reflect this, the dialog display the permission group's icon and description,
+To reflect this, the dialog display the permission group's icon and description.
 
-// TODO: group tracking disappeared in Android 11
+Starting from Android 11,
+static information about platform permission groups is no longer provided.
+Platform permissions are statically defined with an `UNDEFINED` permission group,
+with the system setting the actual one at runtime.
+While it is still possible to determine which group a platform permission belongs to,
+this information must now be queried dynamically using the method `getGroupOfPlatformPermission()`.
+This change reflects a move towards more granular control over permissions and reduces reliance on predefined groupings.
 
 === Edge Cases
 Since the permission dialog hides some complexity of the underlying permission model,
@@ -165,6 +171,11 @@ certain permissions and states combinations arise some peculiarities:
     It presents a different dialog based on the current state and permissions that are being requested,
     allowing to request the coarse location and then upgrade to the more precise version,
     or request both at the same time and let the user decide.
+
+#figure(
+  caption: [The new location permissions request dialog.],
+  image(height: 60%, "/images/cool-location-request.png")
+)
 
 - Background permissions: with the introduction of the tristate location permissions on Android 10,
   background permissions appeared for the first time.
