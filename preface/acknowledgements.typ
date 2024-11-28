@@ -10,4 +10,4 @@
 #acknowledgements-bookmark
 
 // TODO: write acknowledgements
-// I would dearly like to... put acknowledgements on the final version of this thesis.
+I would dearly like to... put acknowledgements on the final version of this thesis.
