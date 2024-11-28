@@ -834,12 +834,15 @@ Following is a description of the practical solutions used by the classes to ens
   Here is a breakdown of the general sequence of events:
   + A lock is acquired for the file channel,
     using either `acquireSharedLockFor(FileChannel channel)` or `acquireExclusiveLockFor(FileChannel channel)`.
+
   + Once the lock is acquired,
     the method executes the provided operation.
     This ensures that file operations happen safely without interference from other threads or processes.
+
   + To avoid resource contention or deadlocks,
     the private methods explicitly release the acquired lock as soon as the operation is completed.
     This is handled in a `finally` block to guarantee the lock is released even if the operation throws an exception.
+
   + All the steps above are wrapped inside robust error handling blocks,
     to manage cases where lock acquisition fails,
     such as when the file is inaccessible or already locked.
@@ -882,6 +885,42 @@ Following is a description of the practical solutions used by the classes to ens
     to ensure that subsequent checks correctly reflect the file's current state.
 
 ===== `PermissionCache`
+The class extends `LockedOperation`,
+inheriting its locking mechanisms for safe file access,
+and integrates the `PermissionFileParser` to handle XML parsing and serialization.
+
+It stores the entire permission cache of the virtual model in its `cache` private field,
+which is a mapping of `AppPermissions` objects for each UID installed in the virtual system.
+
+Following is a breakdown of the class methods:
+- `init()`:
+  if the permission file does not exist,
+  it will create an empty permissions cache.
+  It ensures that the cache is ready before any operations are performed on it.
+
+- `read()`:
+  provides a way to safely retrieve permissions for either a specific UID or the entire permission cache,
+  delegating safe file access management to `LockedOperation`'s `read()` method.
+  The method ensures that the current process has permission to access the given UID's permissions, using `requirePermissionToManage(int uid)`,
+  or `requirePermissionToManageAll()` if the process is trying to access the entire permission cache.
+
+- `update()`:
+  allows modifications to the permissions of either a specific UID or the entire cache.
+  Similarly to the `read()` method,
+  it ensures that the calling process is allowed to modify the data.
+  It acquires an exclusive lock to ensure safe write operations by using `LockedOperation`'s `update()` method,
+  preventing other processes from accessing or modifying the data during updates.
+
+- `requirePermissionToManage(int uid)` and `requirePermissionToManageAll()`:
+  they enforce security restrictions based on the calling UID.
+  - `requirePermissionToManageAll()` restricts access to all permission data for processes that belong to virtual apps,
+    ensuring that only the virtualization framework's process can perform such operations.
+  - `requirePermissionToManage()` ensures that normal app processes can only access or modify permissions for their own UID.
+
+- `load()` and `save()`:
+  they implement the abstract method defined in `LockedOperation` by parsing and serializing the permission cache,
+  using the `PermissionFileParser` instance present in the class.
+  `LockedOperation` internal implementation of other methods will use these to keep the permissions cache synchronized with the persistence layer.
 
 
 === Management Core Component
