@@ -744,7 +744,7 @@ Here's a concise summary of its functionality:
 
 === State Persistence Component
 ==== Design
-The persistence component is responsible for managing the interaction with the permission file that stores the state model.
+The _state persistence_ component is responsible for managing the interaction with the permission file that stores the state model.
 It has two main responsibilities:
 + File parsing: reading and writing the permission state to and from the file,
   ensuring the state model reflects the latest data.
@@ -759,11 +759,56 @@ providing a simple interface for other components to access and modify the permi
 
 // TODO: state persistence
 ==== Implementation
+The component's implementation reflects its design responsibilities by realizing the following classes:
++ File parsing:
+  the `PermissionFileParser` class realizes the serialization and parsing of permission data between the state model and the persistence file.
+
++ Concurrent access management:
+  this aspect is divided between two classes:
+  - `FileLocker`:
+    provides low-level functionality for acquiring and releasing shared or exclusive locks on files,
+    ensuring safe operations when multiple processes or threads interact with the same file.
+	- `LockedOperation`:
+    abstracts `FileLocker`'s mechanisms into a higher-level framework,
+    defining a lifecycle for file interactions.
+
+The `PermissionCache` class is the primary interface for interactions with the state persistence,
+sitting between the state model and persistence components.
+It manages the in-memory representation of permissions while ensuring synchronization with stored data,
+providing efficient access for querying or updating the model.
+
+The four classes, illustrated in @state_persistence_diagram,
+are presented in detail in the following subsections.
 
 #figure(
   caption: [State persistence component class diagram.],
   image("/images/components/state-persistence.svg")
 ) <state_persistence_diagram>
+
+===== File Parsing
+The `PermissionFileParser` is responsible for reading and writing permission data to and from an XML-based structure,
+using streams that reference the permission file.
+These are created externally,
+allowing the parser to focus purely on processing the data without having to handle files directly.
+
+Its implementation relies on standard XML parsing and transformation libraries to handle structured permission data efficiently
+The high-level methods, `read()` and `write()`,
+handle the setup for parsing and serialization tasks,
+but delegate most of the actual work to dedicated helper methods.
+
+Here's a description of the defined operations:
+- XML parsing (`read()`):
+  the method initializes the XML structure by reading from an input stream,
+  identifying `<app>` elements for each UID,
+  and invoking the `fillPermissions()` helper to populate the in-memory representation with permission objects for different types (install, runtime, and groups).
+  This design ensures a modular handling of XML parsing logic.
+
+- XML Serialization (`write()`):
+  this method creates an XML document by iterating over UIDs and their permissions,
+  appending them as `<app>` elements.
+  It uses the `addPermissions()` helper method to create and structure XML nodes for each permission type.
+  The serialized output is then transformed and written to an output stream.
+
 
 === Management Core Component
 ==== Design
