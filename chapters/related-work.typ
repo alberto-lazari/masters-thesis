@@ -10,20 +10,16 @@ To overcome these limitations,
 the field shifted towards OS-level virtualization,
 which provides stronger isolation and better control.
 Recent advancements,
-such as Google’s introduction of pKVM and the Android Virtualization Framework in Android 13,
+such as Google's introduction of pKVM and the Android Virtualization Framework in Android 13,
 highlight this trend.
-These developments allow for secure virtual machines with improved integration into the Android ecosystem.
 
-While significant progress has been made,
-Android virtualization remains an area with opportunities for further innovation.
 The following sections provide an overview on key contributions and advancements in virtualization security,
-highlighting both app-level and OS-level approaches and their impact on the ecosystem.
+outlining both app-level and OS-level approaches and their impact on the ecosystem.
 
 == App-Level Virtualization Security Concerns
-App-level virtualization,
-while providing a lightweight and flexible approach,
-introduces several significant security challenges due to the lack of robust isolation between virtualized applications and the host system.
-These concerns have been extensively analyzed in prior research works @parallel_space_traveling @app_in_the_middle @android_plugin,
+While providing a lightweight and flexible approach,
+app-level virtualization introduces multiple security challenges due to the lack of robust isolation between virtualized applications and the host system.
+These issues have been discussed in different research works @parallel_space_traveling @app_in_the_middle @android_plugin,
 with the primary issues being outlined in the following subsections.
 
 === Same UID Across Apps
@@ -33,14 +29,13 @@ This causes Android to treat them as the same app,
 leading to a lack of differentiation between the host and the virtualized apps.
 
 Since the UID is a key element used by the system to enforce security policies and isolate apps,
-this shared UID introduces several vulnerabilities.
+sharing it introduces several vulnerabilities.
 A significant risk is that plugin apps gain access to the internal storage of the entire container app,
 potentially allowing them to read sensitive data from other plugin apps,
 or even inject malicious code by tampering with the internal files of these apps.
-
-This issue is not addressed in this thesis,
+This last issue is not addressed in this thesis,
 as the VirtualApp framework already includes mechanisms to mitigate these risks.
-However, the consistency and effectiveness of these mechanisms should be verified.
+However, their consistency and effectiveness should be verified.
 
 === Privilege Escalation
 Another major security concern comes from the shared UID,
@@ -51,14 +46,13 @@ For instance,
 a plugin app can gain access to resources not explicitly declared in its manifest,
 but for which the container app has access,
 since the system only enforces restrictions on the container app.
-Furthermore, a plugin app could exploit the fact that the container app has been granted a dangerous permission for another virtual app,
-automatically extending that permission to all other virtualized apps, including potentially malicious ones.
-
+Furthermore, if the container app is granted a dangerous permission for a plugin app,
+it is automatically extended to all other virtual apps, including potentially malicious ones.
 This unintended privilege escalation can lead to serious security breaches,
 allowing apps to perform actions beyond their intended scope,
 often without users noticing any anomalous behavior.
 
-This issue is the main focus of this work.
+This issue is the main focus of this thesis.
 
 == Boxify
 Introduced in 2015 as one of the first attempts at app-level virtualization for Android,
@@ -71,7 +65,7 @@ creating a unique approach for sandboxed apps to communicate with the Android fr
 It used Android's isolated processes,
 which are granted zero permissions by default.
 The container app needed to explicitly grant them to plugin apps,
-allowing for complete control over which resources the apps could access,
+allowing for a complete control on which kind of resources apps were allowed to access,
 making it possible to implement a fine-grained permission control system.
 
 Despite its promising concept,
@@ -92,8 +86,8 @@ Key projects in this domain include:
   all while maintaining native performance.
 
 === Android Virtualization Framework (AVF)
-Introduced with Android 13 @avf,
-it provides official OS-level support for virtualization,
+Introduced on selected devices with the release of Android 13 @avf,
+the Android Virtualization Framework provides official OS-level support for virtualization,
 marking a significant step towards secure, isolated execution environments.
 
 This framework is designed for specific devices and allows small payloads to run in a virtualized secure environment.
@@ -106,4 +100,5 @@ since it is not intended to run full applications or entire operating systems.
 Instead, Microdroid is optimized for running small, isolated workloads that require secure environments,
 such as certain system tasks or trusted applications.
 
-Overall, AVF is a more specialized tool compared to broader frameworks that allow full app virtualization or the execution of entire guest operating systems.
+Overall, AVF is a more specialized tool,
+compared to broader frameworks that allow full app virtualization or the execution of entire guest operating systems.

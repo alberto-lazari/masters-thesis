@@ -10,7 +10,7 @@ The virtual permission model replicates and extends these core mechanisms,
 ensuring that permissions are managed correctly within the virtual environment.
 However, the evaluation phase revealed critical challenges when the model interacts with Android's system components,
 such as content providers and networking operations.
-These limitations highlight the inherent complexity of Android's framework and the difficulties of accurately replicating it in a virtualized space.
+These limitations highlight the inherent complexity of Android's framework and the difficulties of accurately replicating it in a virtual space.
 
 While the current approach has proven effective for many basic use cases,
 it is clear that app-level virtualization reaches its limits when handling more complex, system-level interactions.
@@ -22,8 +22,8 @@ Additionally, methods such as automated permission analysis remain unfeasible wi
 
 An alternative solution that could be explored is to explore the approach proposed in @services_reimplementation,
 by trying to reinstantiate system services within the virtual framework.
-The limitations of this approach still remain to be verified,
-and it is essential to determine whether the limitations and complexity are truly as significant as it appears.
+The limitations and complexity of this approach still remain to be verified,
+and it is essential to determine whether they truly are as significant as it appears.
 If these challenges can be overcome with further implementation,
 this approach would enable direct interception of system-level operations,
 providing a potential way to overcome many of the limitations of the current virtual model.

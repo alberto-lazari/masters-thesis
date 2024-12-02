@@ -58,22 +58,23 @@ and preemptively throwing a `SecurityException` for operations requiring permiss
 While theoretically comprehensive,
 this approach faces several practical challenges:
 - Overly restrictive behavior:
-  preemptively blocking methods risks preventing a large number legitimate operations,
-  leading to frequent unexpected application crashes and a poor user experience.
+  preemptively blocking methods could prevent a large number of legitimate operations to be performed,
+  leading to frequent unexpected application crashes and a poor general user experience.
+
 - Overpermissioning:
   users may respond to frequent crashes by granting all permissions to virtual apps,
-  defeating the purpose of fine-grained permission management that the model tries to address in the first place.
+  defeating the purpose of a fine-grained permission management that the model tries to address in the first place.
+
 - Lack of a permission mapping:
   no current, comprehensive mapping exists that associates Android API methods with their required permissions.
-  Efforts to create such mappings in the past,
-  while useful, remain incomplete or outdated,
+  Efforts to create such mappings in the past, while useful, remain incomplete or outdated,
   making an automated solution not achievable.
+
 - Evolving Android APIs:
   Android's API surface is vast and continuously expanding and changing.
   This complicates efforts to automate a solution,
-  even if an updated and exhaustive permission mapping existed,
-  because maintaining it would require continuous and periodic efforts,
-  that are resource-intensive and not sustainable over time.
+  because even if an updated and exhaustive permission mapping existed,
+  maintaining it would require continuous and periodic efforts that are resource-intensive and not sustainable over time.
 
 The two most notable Android permission mappings were provided by _aexplorer_ @aexplorer and _PScout_ @pscout.
 Unfortunately, both projects have significant limitations and are outdated for modern Android versions:
@@ -82,6 +83,7 @@ Unfortunately, both projects have significant limitations and are outdated for m
   However, as a static analysis tool, it may not address every dynamic execution path,
   making its mapping incomplete.
   The project's published results address versions up to Android 7.
+
 + PScout:
   it implements a dynamic analysis approach to track permission requirements at runtime,
   offering a more precise approach than aexplorer.
@@ -90,6 +92,6 @@ Unfortunately, both projects have significant limitations and are outdated for m
   Its published results, instead, are limited to Android 4.2 (Jelly Bean),
   which means that it does not even account for critical updates like runtime permissions introduced in Android 6.
 
-Both tools lack coverage of key modern Android components,
-such as _APEX modules_---introduced in Android 10---and the _androidx libraries_,
-thus, neither tool is sufficient for providing a comprehensive permission mapping for modern Android APIs.
+Ultimately, both tools lack coverage of key modern Android components,
+such as _APEX modules_---introduced in Android 10---and the _androidx libraries_.
+Thus, neither is sufficient for providing a comprehensive permission mapping for modern Android APIs.

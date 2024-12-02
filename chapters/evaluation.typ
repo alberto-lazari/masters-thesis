@@ -105,14 +105,11 @@ The expected behavior in a standard Android environment is that the network requ
 
 However, when testing this activity in the virtual environment,
 the request always succeeds, even though the Internet permission has not been granted.
-This highlights a significant issue:
-redirection of core methods is not enough to ensure that the permission model functions as expected across all use cases.
+This behavior raises a significant issue,
+proving that redirection of core methods alone is not enough to ensure that the permission model operates as expected across all use cases.
+
 In this instance, the test reveals that additional considerations are needed to enforce permission restrictions at the level of system operations,
 such as networking, which are outside the scope of simple permission checks and requests.
-
-This behavior demonstrates that permission redirection alone is not able to fully address the needs of a virtual permission management model,
-especially when the system interacts with core functionalities,
-such as networking, that bypass the traditional permission model.
 
 #grid(
   columns: (1fr, 1fr),
@@ -122,7 +119,7 @@ such as networking, that bypass the traditional permission model.
     image("/images/testapp/internet-denied.png")
   ),
   figure(
-    caption: [Permission not denied, even when not in manifest.],
+    caption: [Permission not denied, even when not declared in manifest.],
     image("/images/testapp/internet.png")
   )
 )
@@ -134,6 +131,7 @@ mainly for two reasons:
 + Complexity: it is a feature-rich application that extensively uses permissions,
   including access to the camera, microphone, location, and many other.
   This makes it a robust test case for evaluating the virtual permission model's ability to handle real-world apps behavior.
+
 + Compatibility: among the complex applications tested in VirtualXposed,
   Telegram emerged as one of the few capable of running successfully.
   Many other apps had limited compatibility, experienced crashes, or were unable to launch at all.
@@ -143,8 +141,10 @@ The evaluation of Telegram in the virtual environment produced the following pos
   The system returned accurate messages for permission states,
   as if the app were running in a standard Android environment,
   with error messages correctly displayed when permissions were denied in the virtual model.
+
 - Content provider permissions: the model successfully enforced permissions for content providers.
   For example, operations involving contacts (e.g., reading or writing) were verified to work correctly with appropriate permission checks.
+
 - Camera permission: the native camera patch,
   described in @redirection, was verified as working.
   Attempts by Telegram to access the camera without proper permissions resulted in a black screen,
@@ -163,15 +163,18 @@ address some of these gaps but do not provide complete coverage.
 A more comprehensive, universal system is needed to enforce permissions reliably,
 even for indirect or bypassed requests---something this model does not currently provide.
 
-#grid(
-  columns: (1fr, 1fr),
-  inset: 1.5em,
-  figure(
-    caption: [Camera resource denied in the virtual environment.],
-    image("/images/testapp/camera-denied.png")
-  ),
-  figure(
-    caption: [Telegram restricting Gallery, although it could easily access it without permission.],
-    image("/images/testapp/telegram-denied.png")
+#{
+  set text(.95em)
+  grid(
+    columns: (1fr, 1fr),
+    inset: 1.5em,
+    figure(
+      caption: [Camera resource denied in the virtual environment.],
+      image("/images/testapp/camera-denied.png")
+    ),
+    figure(
+      caption: [Telegram restricting Gallery, although it could easily access it without permission.],
+      image("/images/testapp/telegram-denied.png")
+    )
   )
-)
+}

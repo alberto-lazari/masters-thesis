@@ -5,16 +5,16 @@ Virtualization is a technique used to create abstractions of real environments o
 providing replicas that are more flexible, isolated, and scalable than their concrete counterparts.
 By simulating the functionality of hardware, software, or other resources,
 it allows multiple isolated environments to be created and run within a single system, often simultaneously.
-This approach can be used to maximize resource efficiency or enhance security of a system,
+This approach can be used to enhance security or maximize resource efficiency of a system,
 as each virtual environment can be controlled and managed independently.
 
 One of the earliest implementations were multiple-user operating systems for 1960s mainframes,
 where each user was given a virtual environment running on the same physical device, sharing its resources.
 This model was not only meant to let multiple operators access an individual mainframe concurrently,
-but also to give them a private, independent space, that would simulate having a computer of their own.
+but to also give them a private, independent space, that would simulate having a computer of their own.
 
 The concept evolved with time and started being used for the creation of _virtual machines_ (VM),
-that allow for the virtualization of the entire software,
+that allow for the virtualization of the entire software stack,
 leading to actual "computers within a computer".
 VMs are managed by a hypervisor,
 a software layer that coordinates and isolates them,
@@ -24,8 +24,9 @@ ensure consistent environments,
 or create secure spaces that are kept isolated from the host system.
 
 More recently, virtualization has extended its use-cases to OS-level environments,
-which comes in the form of containers, created with tools such as Docker @docker and Podman @podman.
-They are OS instances that share the host kernel and are widely used for creating multiple virtual servers on a same physical one,
+which come in the form of containers,
+created with tools such as Docker @docker and Podman @podman.
+They are OS instances that share the host kernel and are widely used for running multiple virtual servers on a same physical one,
 often by creating them from scratch on the fly from a previously specified configuration.
 Containers can be used for creating lightweight reproducible environments to run software tests,
 compilation tasks,
@@ -44,16 +45,16 @@ Because of these limitations, app-level virtualization has become the most pract
 Unlike OS-level virtualization, which demands kernel-level access and extensive configuration,
 app-level virtualization handles the creation and management to a single application that operates entirely within the user-space layer,
 the _container app_,
-providing a convenient method for offering isolation without requiring specialized hardware or system alterations.
+providing a convenient method for offering isolation without requiring system alterations.
 The creation and management of the virtual environments is handled entirely within a single application, the _container app_,
 which can host one or more _plugin apps_, the virtualized apps.
 This design enables features such as:
 
--	App cloning: running multiple instances of the same app simultaneously within isolated contexts.
+- App cloning: running multiple instances of the same app simultaneously within isolated contexts.
 
--	Sandboxed environments: enabling apps to run within a more restricted and controlled environment for enhancing security and research.
+- Sandboxed environments: enabling apps to run in a more restricted and controlled environment for enhancing security and research.
 
--	Dynamic patches: applying hotfixes or updates to a virtualized environment without modifying the main system @virtualpatch.
+- Dynamic patches: applying hotfixes or updates to a virtualized environment without modifying the main system @virtualpatch.
 
 == Android Architecture
 The Android architecture consists of many layered components that interact to provide essential features.
@@ -61,40 +62,41 @@ Each layer has specific responsibilities,
 from user applications down to the low-level system components,
 contributing to Android's performance, scalability, and security.
 
-Virtualization frameworks have to interact with or replicate virtual versions of some components, in some occasions.
-The following sections describe each layer's purpose,
-in order to provide some basic understanding needed to deal with Android virtualization.
+Virtualization frameworks often need to interact with or emulate virtual versions of certain components.
+The following sections outline the purpose of each layer,
+providing an essential context understanding Android virtualization.
 
 ==== Application Layer
 The Application layer consists of user-facing apps, that can be installed and managed by the user.
 Each app runs in its own sandboxed process, ensuring security and privacy by isolating apps from one another.
-The sandbox is guaranteed by these concepts:
+The sandbox is guaranteed by three concepts:
 
-+	UID model: a unique user ID (UID) is assigned to each app by the system, by creating a dedicated Unix user.
++ UID model: a unique user ID (UID) is assigned to each app by the system, by creating a dedicated Unix user.
   This ensures that each application has its own private storage directories and files, which are kept isolated from other apps.
 
-+	Process separation: each app runs as a separate OS process,
-  which means the underlying Linux OS process isolation applies by default,
-  where the OS ensures that memory and resources allocated to one process are not accessible by others unless explicitly allowed.
++ Process separation: each app runs as an independent OS process,
+  which means that the underlying Linux process isolation applies by default.
+  This ensures that memory and resources allocated to one process are not accessible by others unless explicitly shared.
 
-+	Permission model: Android enforces a fine-grained permission model that controls access to specific system resources and data.
++ Permission model: Android enforces a fine-grained permission model that controls access to specific system resources and data.
   Permissions are granted based on the app UID and GID.
 
 ==== Java API Framework
 This layer provides a set of APIs that enables third-party applications to
-handle UI elements, manage application lifecycles, and control interactions between applications and system services.
+manage UI elements, handle application lifecycles, and interact with system services.
 It is implemented as an extensive codebase of Java and Kotlin classes,
-which is described in the official documentation as the same framework used by system apps @framework_api,
+presented in the official documentation as the same framework used by system apps @framework_api,
 thus providing the entire feature-set of the Android OS.
 Starting with Android 9, however,
-the framework introduced a separation between SDK and non-SDK interfaces through the hidden APIs list @hidden_apis.
+the framework introduced a separation between SDK and non-SDK interfaces via the hidden APIs list @hidden_apis.
 This created a gap between the capabilities of system applications and those available to third-party applications,
 restricting access to certain internal features.
 
 ==== System Layer
 The System layer includes essential system applications and services that manage core functionalities of the OS,
 such as telephony, location and media.
-These components are granted elevated permissions and provide services that user apps rely on but cannot directly access.
+These components are granted elevated permissions and provide services that user apps rely on,
+but cannot directly access.
 
 - Services:
   examples of key system services include the Location Manager, Telephony Manager, Notification Manager.
@@ -102,8 +104,8 @@ These components are granted elevated permissions and provide services that user
   often granting controlled access to sensitive resources that are restricted behind specific permissions.
   The actual implementation resides in system components that live in their own elevated process.
 
-  While service interfaces are usually defined in `android.*` packages,
-  their implementation are placed under `com.android.server.*` packages.
+  While service interfaces are typically defined in `android.*` packages,
+  their implementations are placed under `com.android.server.*` packages.
   This separation is even more evident in the file system structure of the source files,
   where services have their source code organized in a dedicated `services/` directory tree,
   which puts emphasis on the fact that they are components of the system,
@@ -115,7 +117,7 @@ These components are granted elevated permissions and provide services that user
 
 // TODO: expand
 ==== Binder Mechanism
-The Binder mechanism is Android’s core inter-process communication (IPC) system,
+The Binder mechanism is Android's core inter-process communication (IPC) system,
 used allow components running in different processes to communicate with each other.
 Acting as a bridge between the application layer and system services,
 it provides a way for apps to request and access services and resources managed by the system.

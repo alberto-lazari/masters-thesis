@@ -30,19 +30,19 @@ The main goal of this thesis is to address this issue,
 by proposing and implementing a custom virtual permission model for Android app-level virtualization.
 This model aims to replicate and extend the native Android permission system,
 to ensure that virtual apps are subject to proper permission checks and that permissions are managed for individual apps.
-To realize this, the thesis focuses on extending an existing app-level virtualization framework,
+To realize this, the work focuses on extending an existing app-level virtualization framework,
 by integrating the custom model in a virtual permission management system that intercepts permission-related operations from virtual apps,
 ensuring fine-grained access control.
 
 Before designing this custom permission model,
 Android's native permission model implementation is analyzed by exploring parts of the Android Open Source Project (AOSP) code and the behavior of apps in recent Android versions.
-This step ensures that the virtual system closely resembles Android's original permission model,
+This step ensures that the virtual system closely resembles the system's original permission model,
 enabling smooth interaction and compatibility between the two.
 By understanding how Android's permission system operates,
-the virtual framework can easily replace the native system in the virtual environment,
-managing permissions for virtual apps in a consistent and secure manner.
+the virtual framework can easily replace the it in the virtual environment,
+safely managing permissions for virtual apps in a consistent way.
 
-This work also details the virtual permission model's implementation and its evaluation through both controlled tests and a real-world application,
+This work also details the virtual permission model's implementation and evaluates it through both controlled tests and a real-world application
 to prove its ability to enforce appropriate permission management in the virtual framework.
 Additionally, the challenges and limitations of scaling this model to handle more complex system-level interactions are discussed,
 particularly their relations to the constraints of app-level virtualization and Android's architecture.

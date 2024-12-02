@@ -2,21 +2,27 @@
 
 = Securing the Virtual Apps <implementation>
 == Preliminary Work
-Before actually introducing the virtual permission model, some preliminary work had to be addressed.
-VirtualXposed has been currently updated to support Android versions up to Android 12, on its official open-source repository,
+Before introducing the virtual permission model, some preliminary work had to be addressed.
+VirtualXposed has been currently updated to support Android versions up to Android 12 in its official open-source repository,
 with a release called "Initial support for Android 12".
-At the same time, a developer working on a personal fork of VirtualXposed also independently updated it to Android 12.
-Both of these VirtualXposed versions had compatibility issues, but were complementary in some areas.
-A merge of these two took the best of both worlds, applying fixes to one version that were developed in the other.
-This created a starting point, where VirtualXposed had a decent Android 12 support, compared to older versions.
-At the time of that work, however, the latest version was Android 14, so further work had to be done,
+Simultaneously, a developer working on a personal fork of VirtualXposed also independently updated it to Android 12.
+Although both of these VirtualXposed versions had compatibility issues,
+they were complementary in some areas.
+A merge of these two took the best of both worlds,
+applying fixes from one version to the other.
+This created a starting point,
+where VirtualXposed had a sufficient Android 12 support,
+compared to older versions.
+At that time, however,
+the latest version was Android 14, so further work had to be done,
 in order be able to compare the virtual environment with the native one on a current version.
 
 === Android 14 Support
 In its initial form, VirtualXposed was incompatible with the latest version,
-not even being able to install, because of many errors in the manifest.
-This was because the app was originally developed for older Android versions,
+not even being able to install, because of multiple errors detected in the manifest.
+This happened because the app was originally developed for older Android versions,
 and updates had introduced mandatory changes.
+
 Required changes in the app included:
 - Explicit exported components: Android 12 and later versions require that components like activities or receivers explicitly declare their export status,
   when they have intent filters.
@@ -159,15 +165,6 @@ Examples of typical fixes are the following:
   As shown in @snippet_dedicated_class, this type of change requires some code forking,
   based on the current Android version.
 
-  #code(caption: [The two `SigningInfo` constructors in its mirror class.])[
-    ```java
-    @MethodReflectParams("android.content.pm.PackageParser$SigningDetails")
-    public static RefConstructor<android.content.pm.SigningInfo> ctor;
-    // Android 14 moved SigningDetails to a dedicated class
-    @MethodReflectParams("android.content.pm.SigningDetails")
-    public static RefConstructor<android.content.pm.SigningInfo> ctorUpsideDownCake;
-    ```
-  ] <signinginfo_constructor>
   #code(caption: [Dedicated `SigningDetails` mirror class.])[
     ```java
     public class SigningDetails {
@@ -182,6 +179,15 @@ Examples of typical fixes are the following:
     }
     ```
   ] <signingdetails_mirror_class>
+  #code(caption: [The two `SigningInfo` constructors in its mirror class.])[
+    ```java
+    @MethodReflectParams("android.content.pm.PackageParser$SigningDetails")
+    public static RefConstructor<android.content.pm.SigningInfo> ctor;
+    // Android 14 moved SigningDetails to a dedicated class
+    @MethodReflectParams("android.content.pm.SigningDetails")
+    public static RefConstructor<android.content.pm.SigningInfo> ctorUpsideDownCake;
+    ```
+  ] <signinginfo_constructor>
   #code(caption: [Code snippet that includes the `SigningDetails` update.])[
     ```java
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
@@ -252,28 +258,28 @@ making it more efficient to use and easier to manage overall.
 One of the main features of VirtualApp is the possibility to install multiple copies of a same application.
 The framework's original implementation did not assign cloned apps a dedicated UID.
 Instead, a same app would always have the same UID,
-even when installed under a different virtual user.
+even when installed under a different virtual user to act as a clone.
 While this design worked fine for VirtualApp itself,
 since it did not actively use them,
 it was a limit for implementing the virtual permission model.
 Permissions in Android are managed by UID,
-so without unique UIDs, an app's permissions would be managed the same across all users,
-preventing to handle permission based on the current virtual user.
+so without a unique one,
+it would not have been as straightforward to manage permissions separately for individual instances of an app.
 
-In order to address this, the UID system in VirtualApp was updated to reflect Android multi-user support approach.
-When multi-user is enabled in the Android system,
-each installed app is assigned an application-specific UID in the range 10000-19999 @app_uid,
-which is then composed with the current user ID to form its actual UID.
+In order to address this, the UID system in VirtualApp was updated to align with Android multi-user support approach.
+In a multi-user Android system,
+each installed app is assigned a unique application-specific UID in the range 10000–19999 @app_uid.
+This is then composed with the current user ID to generate a unique app-user combination.
 The range of UIDs assigned per user is 100000 @per_user_range,
-which means that the final UID is composed as
-$"userId" times 100000 + "appId"$.
-For example, the app with UID 10005 would have the same UID for the default user (user 0),
-but instead, user 2 would see it with UID 210005.
+which means that the final result is calculated as:
+$ italic("userId") times 100000 + italic("appId") $
+For example, an app with UID 10005 would retain it for the default user (user 0).
+Instead, for user 2, it would be 210005.
 This is conveniently done in the hidden API method
-#raw(lang: "java", "public static int getUid(int userId, int appId)") of the class `UserHandle`,
+`public static int getUid(int userId, int appId)` of the class `UserHandle`,
 which VirtualApp provides as visible in its `VUserHandle` class.
 
-The change was introduced in the `getOrCreateUid()` method of `UidSystem`,
+The change was introduced in the `getOrCreateUid()` method of the `UidSystem` class,
 as shown in @old_uid_system and @new_uid_system.
 
 #code(caption: [Old VirtualApp UID creation method.])[
@@ -329,11 +335,11 @@ thus it is not required to address these edge cases.
 
 The main difference with the system's model is the _policy engine_ not being centralized.
 Since its logic is simpler, it is distributed across different components.
-Some responsibilities are included in user interaction and the management core,
-while certain elements are directly embedded into the state model.
+Certain responsibilities are included in user interaction and the management core,
+while other elements are directly embedded into the state model.
 
 Additionally, it is worth noting that the _registry_ component is mostly publicly accessible using Android APIs,
-making a full re-implementation is unnecessary.
+making a full re-implementation unnecessary.
 Instead, only few specific aspects of the registry are included inside the _state model_,
 to address the limited specific needs required by the virtual model.
 
@@ -377,7 +383,7 @@ Each following subsection is dedicated to a specific component and is structured
 
 #figure(
   caption: [Simplified architecture of the virtual permission model's classes.],
-  image("/images/virtual-classes.svg")
+  image(width: 90%, "/images/virtual-classes.svg")
 ) <virtual_classes_diagram>
 
 === State Model Component
@@ -1463,7 +1469,7 @@ specific features are addressed to extend the support to practical use cases:
 
 #figure(
   caption: [Redirection component class diagram.],
-  image(width: 85%, "/images/components/redirection.svg")
+  image(width: 73%, "/images/components/redirection.svg")
 ) <redirection_diagram>
 
 ===== Method Proxies

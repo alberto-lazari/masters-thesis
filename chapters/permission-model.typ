@@ -11,10 +11,8 @@ such as:
 
 - System and device settings.
 
-This system of permissions gives apps a mechanism to follow the least privilege principle,
-and increase user awareness,
-creating a barrier that requires---either explicit or implicit---user or system consent,
-before sensitive information or powerful features can be accessed.
+This system of permissions gives apps a mechanism to follow the least privilege principle and increase user awareness,
+creating a barrier that requires---either explicit or implicit---user or system consent before sensitive information or powerful features can be accessed.
 
 Every app must declare all required permissions in its `AndroidManifest.xml` file.
 The manifest can be seen as a contract,
@@ -27,12 +25,12 @@ since users are presented and can review the requested permissions before instal
 == Protection Levels
 Permissions are assigned a _protection level_ at the time they are defined.
 It reflects how sensitive the property protected by a permission is,
-and determines which steps an application needs to perform, in order to obtain it.
+and determines which steps an application needs to perform to obtain it.
 
 Protection levels categorize permissions as follows:
 + Normal permissions:
   they grant access to simple resources that pose a low risk to user privacy and other apps' security,
-  such as setting alarms, checking the network state, or controlling the flashlight.
+  such as setting alarms, checking the network state, or controlling the flashlight status.
 
 + Dangerous permissions:
   they provide access to sensitive data or resources, such as device's location, camera, or contacts,
@@ -49,7 +47,7 @@ both normal and dangerous permissions were automatically granted at install-time
 where users had to either accept all requested permissions or cancel the installation.
 Since Android 6, apps are required to request individual dangerous permissions before using them,
 prompting users to approve each permission request.
-This further divides permissions in two categories, based on their protection level:
+This further divides permissions into two categories, based on their protection level:
 + Install-time permissions: they are granted once during installation, and cannot be revoked.
   They include both normal permissions, which are always granted automatically, and signature permissions,
   which depend on the requesting app's certificate.
@@ -60,17 +58,18 @@ This further divides permissions in two categories, based on their protection le
 == Runtime Permissions
 By involving an interaction with the user,
 _runtime permissions_ are the most complex type in the Android permission model.
-These permissions require that prompts be designed to be quick and simple, understand user intentions, and be accessible to the general user to understand them.
-This has lead to many updates and changes over time,
-aimed at simplifying the user experience or enhancing the security.
+These permissions require that prompts be designed to be quick and simple,
+understand user intentions, and be accessible to a general user to understand them.
+This complexity has led to multiple updates and adjustments throughout different Android versions,
+with changes made at various levels of the permission system to simplify the user experience and improve security.
 
 === Permission Dialog
 The permission dialog is the primary interface through which users interact with Android's runtime permissions,
 and is presented every time apps request an unset permission.
 To keep interactions simple, the dialog hides complex permission logic mechanisms by condensing it into just two or three buttons,
 balancing user control with simplicity of understanding.
-Most of the times, the buttons are:
-- Allow: it's usually the top button and permanently grants the permission,
+Most of the times, the buttons are as shown in @dialog_image:
+- Allow/While using the app: it's usually the top button and permanently grants the permission for foreground access,
   marking it as a fixed setting that remains unless the user actively changes it.
 
 - Don't allow: it's the button at the bottom of the dialog and rejects the permission request,
@@ -92,9 +91,31 @@ This approach simplifies complex permission management for users,
 allowing Android to communicate security options without overwhelming users with technical details.
 
 It is also not the only way for users to manage runtime permissions.
-System settings provide a similar interface for setting permission statuses for each installed app.
+System settings provide a similar interface for setting permission statuses for each installed app,
+illustrated in @permission_settings.
 Users are required to use settings to change permissions that had been already set,
 since the dialog will not be prompted anymore.
+
+#{
+  set text(.95em)
+  set image(height: 35%)
+  grid(
+    columns: (1fr, 1fr),
+    inset: .8em,
+    [
+      #figure(
+        caption: [Permission dialog to request the camera permission.],
+        image("/images/camera-request.png")
+      ) <dialog_image>
+    ],
+    [
+      #figure(
+        caption: [App permissions settings interface.],
+        image("/images/permission-settings.png")
+      ) <permission_settings>
+    ],
+  )
+}
 
 === Permission Groups <permission_groups>
 In order to avoid repetitive requests of similar permissions,
@@ -103,8 +124,9 @@ based on the type of data or resource they protect.
 
 When accepting a permission request,
 Android saves the choice for the permission's group,
-so that the next time a permission from the same group is requested,
-the user is not prompted the permission dialog and the permission is automatically assigned the group's status.
+so that the next time a request for the same group is performed,
+the user is not prompted the request dialog and the permission is automatically granted or rejected,
+based on its group status.
 
 For example, when granting an app the "Read contacts" permission, the entire "Contacts" permission group is granted.
 This means that "Write contacts" (another permission in the "Contacts" group) is not granted yet,
@@ -113,21 +135,20 @@ The reverse is also true: if the user denies a permission,
 every other permission in its group is immediately denied.
 
 At a practical level,
-the behavior of permission groups makes permission dialogs more closely tied to the group itself rather than to individual permissions.
-This happens because permission dialogs are promoted when permission groups are unset.
-To reflect this, the dialog display the permission group's icon and description.
+the behavior of permission groups makes request dialogs more closely tied to the group itself rather than to individual permissions.
+To reflect this, dialogs display the permission group's icon and description.
 
 Starting from Android 11,
 static information about platform permission groups is no longer provided.
-Platform permissions are statically defined with an `UNDEFINED` permission group,
-with the system setting the actual one at runtime.
+Platform permissions are statically defined with an `UNDEFINED` group,
+with the actual one being set by the system at runtime.
 While it is still possible to determine which group a platform permission belongs to,
 this information must now be queried dynamically using the method `getGroupOfPlatformPermission()`.
 This change reflects a move towards more granular control over permissions and reduces reliance on predefined groupings.
 
 === Edge Cases
-Since the permission dialog hides some complexity of the underlying permission model,
-certain permissions and states combinations arise some peculiarities:
+Since request dialogs hide some complexity of the underlying permission model,
+certain permissions and state combinations arise some peculiarities:
 - `shouldShowRequestPermissionRationale`: when users deny a permission,
   they might inadvertently block a feature without fully understanding its importance.
   Android provides developers with the `shouldShowRequestPermissionRationale()` method to address this,
@@ -150,7 +171,7 @@ certain permissions and states combinations arise some peculiarities:
   particularly for fixed denials:
   where a user has permanently denied the permission.
   This is a useful information,
-  that an app may want to use to inform the user that it cannot request the permission anymore.
+  that an app might want to use to inform the user that it cannot request the permission anymore.
   In such cases, `checkPermission()` returns `PERMISSION_DENIED`,
   while `shouldShowRequestPermissionRationale()` returns `false`.
   Unfortunately, this combination can also occur if a user dismissed the dialog without explicitly denying the permission,
@@ -179,17 +200,33 @@ certain permissions and states combinations arise some peculiarities:
   and are currently available for camera, microphone, and location permissions.
   They can be requested only after obtaining access to the foreground permissions.
   When requested they do not prompt a permission dialog.
-  Instead, they redirect to a system settings activity,
+  Instead, they redirect to a system settings activity (@backround_location_setting),
   where users need to manually allow the permission.
 
 Analyzing these behaviors is essential for understanding how Android's permission model affects app interactions with permissions.
 This analysis was also useful for developing a consistent behavior for the virtual permission model,
 that is presented in later chapters.
 
-#figure(
-  caption: [The new location permissions request dialog.],
-  image(height: 45%, "/images/cool-location-request.png")
-) <new_location_dialog>
+#{
+  set text(.95em)
+  set image(height: 35%)
+  grid(
+    columns: (1fr, 1fr),
+    inset: .8em,
+    [
+      #figure(
+        caption: [The new location permissions request dialog.],
+        image("/images/cool-location-request.png")
+      ) <new_location_dialog>
+    ],
+    [
+      #figure(
+        caption: [Allowing location access in the background from settings.],
+        image("/images/background-location.png")
+      ) <backround_location_setting>
+    ],
+  )
+}
 
 == Implementation
 As discussed in previous sections,
@@ -225,7 +262,6 @@ providing a comprehensive---although simplified---view of how the system operate
   image(width: 88%, "/images/system-classes.svg")
 ) <system_classes_diagram>
 
-// TODO: code references?
 ==== `PermissionManager`
 It is the main service interface for permission management.
 As a central access point,
