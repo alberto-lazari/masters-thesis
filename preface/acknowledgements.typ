@@ -13,12 +13,12 @@
 #set text(style: "italic")
 
 Many have supported me along the path to this achievement.
-I would like to state my deepest gratitude to each one of them,
-although I know that words alone will never enough to express it completely.
+I would like to share my deepest gratitude to each one of them,
+although I know that words alone will never be enough to express it completely.
 I hope someday I can return this kindness.
-In the meantime, let me try the best I can do through these black letters on a white page.
+In the meantime, let me try my best through these black letters on a white page.
 
-To professor Losiouk,
+To Professor Losiouk,
 for inspiring my interest in a new field and supervising the long process that led to this work with admirable patience and care.
 
 To everyone at Corollario, for their warm welcome into a new adventure.
@@ -26,7 +26,7 @@ Although it has been a short experience up until now,
 it filled the last days of my degree with inspiring harmony.
 
 To everyone within the scouting world I had the privilege of meeting.
-So many embodied living examples of the kind of Christian, citizen, and man I aspire to become.
+So many embodied living examples of the kind of Christian, citizen, and person I aspire to become as a man.
 
 To my closest friends,
 that I can always trust to be there for supporting and encouraging me.
