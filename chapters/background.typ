@@ -115,7 +115,6 @@ but cannot directly access.
   they are regular apps that come pre-installed with the system image and can be granted system permissions @privileged_permissions.
   They are installed under a read-only directory, to avoid deletion and modification.
 
-// TODO: expand
 ==== Binder Mechanism
 The Binder mechanism is Android's core inter-process communication (IPC) system,
 used allow components running in different processes to communicate with each other.
@@ -209,7 +208,6 @@ removing the need for specific manual setup.
 }
 
 === VirtualApp Architecture
-// TODO: virtualapp architecture diagram
 By looking at the structure of VirtualXposed's project,
 the code is divided in three Gradle projects:
 - `:app` is the UI part of the application,

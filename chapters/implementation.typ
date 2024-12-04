@@ -28,8 +28,7 @@ Required changes in the app included:
   when they have intent filters.
   #code(caption: [Activity that required an explicit export status.])[
     ```xml
-    <activity 
-        android:name=".sys.ShareBridgeActivity"
+    <activity android:name=".sys.ShareBridgeActivity"
         android:exported="true"
         android:label="@string/shared_to_vxp"
         android:taskAffinity="${applicationId}.share"
@@ -46,12 +45,10 @@ Required changes in the app included:
   VirtualApp's daemon service had to be updated to include this requirement.
   #code(caption: [Updating the daemon service.])[
     ```xml
-    <uses-permission 
-        android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"
         android:minSdkVersion="34" />
     <application>
-        <service 
-            android:name="com.lody.virtual.client.stub.DaemonService"
+        <service android:name="com.lody.virtual.client.stub.DaemonService"
             android:process="@string/engine_process_name"
             android:foregroundServiceType="specialUse" />
         ...
@@ -371,7 +368,7 @@ Each following subsection is dedicated to a specific component and is structured
 + Design: describes the component's design,
   outlining its responsibilities and interactions with other components in the system.
   It also addresses special cases that the component must handle,
-  with a focus on how its behavior differs from the equivalent component in the Android system.
+  with a focus on how the behavior differs from its equivalent in the Android system.
 
 + Implementation: explains how the design concepts are realized in practice,
   providing a detailed look at the classes that implement previously identified design requirements.
@@ -426,7 +423,7 @@ The possible states for a runtime permission are:
   Further requests will not prompt a permission request dialog,
   unless the user explicitly changes its status from the settings.
 
-- Always ask (not granted): the permission has been granted once in another session,
+- Always ask (not granted): the permission has been granted once in a previous session,
   or it has been set as "Always ask" from the settings.
 
 - Always ask (granted for current execution): the permission is granted for the current session,
@@ -462,10 +459,9 @@ Their possible state can be:
   or the group status has been set to "Always ask" from the settings.
 
 ===== Hierarchical Structure for Permissions
-The state model organizes permissions into hierarchical collections:
-- UID permissions: set of permissions declared by a specific virtual instance of an application.
-
-- Permissions per user: set of UID permissions for apps installed for a virtual user.
+The state model organizes permissions into hierarchical collections that store permissions declared by a specific UID.
+Unlike Android's implementation, a user-dedicated structure is not intended to be defined,
+since user information is included in the UID itself.
 
 ==== Implementation
 The component consists of a hierarchy of classes, inheriting from the abstract `Permission` base class,
@@ -485,7 +481,7 @@ providing a flexible interface for permission management.
 This abstraction ensures safe and robust permission states handling, validation, and transitions,
 while simplifying integration with the management core component.
 
-This class also simplifies interactions with the state persistence,
+This class also interacts with the state persistence,
 providing utility methods for simplifying its tasks by hiding the complexity of the permission state logic.
 
 The main features it provides are:
@@ -549,15 +545,13 @@ The main features it provides are:
     It is used to support the parsing process.
 
 ===== `InstallPermission`
-This is a concrete implementation of the `Permission` base class,
-used to model install-time permissions.
-The only notable distinction of this class lies in its overridden `isValidStatus()` method,
+It extends the `Permission` base class to represent install-time permissions.
+The only notable addition is its overridden `isValidStatus()` method,
 which restricts valid states to `GRANTED` and `DENIED`.
-This reflects the simplicity of install-time permissions' binary state,
+This reflects the simple nature of install-time permissions' binary state,
 as noted in the design.
-
-No additional functionality or methods are introduced,
-as the straightforward design of install-time permissions requires no further features beyond the `Permission`'s class capabilities.
+No additional methods or functionality are needed,
+as the base class already supports all the features required for install-time permissions.
 
 ===== `RuntimePermission`
 The `RuntimePermission` class is a detailed specialization over the base class.
@@ -579,16 +573,16 @@ the class introduces several specific concepts:
 
 - Permission group integration:
   runtime permissions are associated with a `PermissionGroup`.
-  This can simplifies state management,
+  This can simplify state management,
   giving a direct access to the group's status,
-  which is necessary to fully evaluate the actual runtime permission status.
+  which is necessary to evaluate the actual runtime permission status.
   Additionally, it is useful for supporting cases where group information is more relevant,
   such as in permission dialogs which show the group's icon and description.
 
   To provide support for this concept the class includes:
-  - A nullable `group` private field, accessible with its `getGroup()`.
+  - A nullable `group` private field, accessible with its dedicated `getGroup()` method.
 
-  - `boolean hasPermissionGroup()`: determines whether the runtime permission is within a group.
+  - `boolean hasPermissionGroup()`: determines whether the runtime permission is associated with a group.
 
   - `int getGroupIconRes()`: returns the resource id of the permission's group icon,
     used by the user interaction component.
@@ -640,20 +634,20 @@ the class introduces several specific concepts:
 - Utility methods:
   - `boolean needsRequestDialog()`:
     determines whether a permission dialog should be displayed for requesting the permission,
-    based on the current complete state.
+    based on its current complete state.
 
   - `boolean hasBackgroundPermission()`:
     checks if a runtime permission has an associated background permission,
-    mainly used to determine the dialog buttons to display.
+    mainly used to determine how buttons should be displayed in the request dialog.
 
 ===== `PermissionGroup`
 The `PermissionGroup` class provides a higher-level abstraction for managing sets of related runtime permissions.
 It enables a hierarchical approach to permission management,
 where permissions can inherit or override the group's status.
 
-The class is mostly used in the user interaction,
-to retrieve informations such as its display icon.
-It is also used when granting on revoking a batch of permissions,
+The class is mostly used in user interaction,
+to retrieve informations like its display icon.
+It is also used when granting or revoking a batch of permissions,
 for example when denying a group from the settings.
 
 The following are its main features:
@@ -669,18 +663,18 @@ The following are its main features:
   +	`addPermission(RuntimePermission permission)`:
     adds a runtime permission to the group,
     but only if it's not a background permission,
-    because those need to be managed individually.
-    If not, granting the foreground permission would also grant access to the background one automatically,
-    being defined in the same group.
+    because those require individual management.
+    Including a background permission would cause the foreground one to automatically grant access to it,
+    since they belong to the same group.
 
 -	Group icon retrieval:
   the class provides a method to fetch the group's icon from Android's official resources,
   using `getGroupIconRes()` to get access to the internal names.
-  Permission groups icons follow a mostly consistent naming pattern (`perm_group_$groupName`),
-  so their retrieval can be somewhat automated in the implementation of `getGroupIconRes(String group)`,
-  shown in @group_icon_res.
+  Since permission group icons mostly follow a consistent naming pattern (`perm_group_$groupName`),
+  their retrieval can be partially automated in the implementation of `getGroupIconRes(String group)`,
+  as demonstrated in @group_icon_res.
 
-  #code(caption: [`getGroupIconRes` method implementation, providing an algorithm to retrieve the original permission groups icons.])[
+  #code(caption: [`getGroupIconRes` method implementation, providing an algorithm to retrieve original permission groups icons.])[
     ```java
     public static int getGroupIconRes(final @Nullable String group) {
         final var resources = VirtualCore.get()
@@ -752,11 +746,13 @@ Here's a concise summary of its functionality:
 ==== Design
 The _state persistence_ component is responsible for managing the interaction with the permission file that stores the state model.
 It has two main responsibilities:
-+ File parsing: reading and writing the permission state to and from the file,
-  ensuring the state model reflects the latest data.
-
-+ Concurrent access management: handling concurrent file access,
++ Concurrent access management:
+  handling concurrent file access,
   since virtual apps operate in separate processes and may attempt to read or write the file simultaneously.
+
++ File parsing:
+  reading and writing the permission state to and from the file,
+  ensuring the state model reflects the latest data.
 
 To achieve this, the component ensures thread and process-safe operations,
 using locking mechanisms to prevent conflicts or data corruption.
@@ -768,9 +764,6 @@ thus stronger synchronization means like file system locks are necessary to avoi
 
 ==== Implementation
 The component's implementation reflects its design responsibilities by realizing the following classes:
-+ File parsing:
-  the `PermissionFileParser` class realizes the serialization and parsing of permission data between the state model and the persistence file.
-
 + Concurrent access management:
   this aspect is divided between two classes:
   - `FileLocker`:
@@ -779,6 +772,9 @@ The component's implementation reflects its design responsibilities by realizing
   - `LockedOperation`:
     abstracts `FileLocker`'s mechanisms into a higher-level framework,
     defining a lifecycle for file interactions.
+
++ File parsing:
+  the `PermissionFileParser` class realizes the serialization and parsing of permission data between the state model and the persistence file.
 
 The `PermissionCache` class is the primary interface for interactions with the state persistence,
 sitting between the state model and persistence components.
@@ -792,30 +788,6 @@ are presented in detail in the following subsections.
   caption: [State persistence component class diagram.],
   image("/images/components/state-persistence.svg")
 ) <state_persistence_diagram>
-
-===== File Parsing
-The `PermissionFileParser` is responsible for reading and writing permission data to and from an XML-based structure,
-using streams that reference the permission file.
-These are created externally,
-allowing the parser to focus purely on processing the data without having to handle files directly.
-
-Its implementation relies on standard XML parsing and transformation libraries to handle structured permission data efficiently
-The high-level methods, `read()` and `write()`,
-handle the setup for parsing and serialization tasks,
-but delegate most of the actual work to dedicated helper methods.
-
-Here follows a description of the defined operations:
-- XML parsing (`read()`):
-  the method initializes the XML structure by reading from an input stream,
-  identifying `<app>` elements for each UID,
-  and invoking the `fillPermissions()` helper to populate the in-memory representation with permission objects for different types (install, runtime, and groups).
-  This design ensures a modular handling of XML parsing logic.
-
-- XML Serialization (`write()`):
-  this method creates an XML document by iterating over UIDs and their permissions,
-  appending them as `<app>` elements.
-  It uses the `addPermissions()` helper method to create and structure XML nodes for each permission type.
-  The serialized output is then transformed and written to an output stream.
 
 ===== Concurrent Access Management
 The two classes implementing concurrent access to the permission file are layered,
@@ -834,15 +806,46 @@ Following is a description of the practical solutions used by the classes to ens
   These operations are passed to one of the two public methods defined in the class:
   `performWithSharedLockOn(File file, Function operation)` and  `performWithExclusiveLockOn(File file, Function operation)`.
 
+  #code(caption: [`performWithSharedLockOn` implementation.])[
+    ```java
+    public <T> T performWithSharedLockOn(final File file,
+            final Function<FileChannel, T> operation) {
+
+        FileChannel channel = null;
+        try {
+            channel = new FileInputStream(file).getChannel();
+            acquireSharedLockFor(channel);
+            return operation.apply(channel);
+        } catch (FileNotFoundException e) {
+            VLog.e(TAG, "Cannot open file %s: file not found", file.toString());
+            e.printStackTrace();
+        } catch (IOException | OverlappingFileLockException e) {
+            VLog.e(TAG, "Cannot acquire shared lock on file %s", file.toString());
+            e.printStackTrace();
+        } finally {
+            releaseSharedLock();
+            if (channel != null) {
+                try {
+                    channel.close();
+                } catch (IOException ignored) {
+                }
+            }
+        }
+        return null;
+    }
+    ```
+  ] <perform_shared_lock>
+
   Internally, the private methods in `FileLocker` handle the specific steps required to safely manage file locks.
   These encapsulate the low-level logic to support the functionality provided by the public methods.
-  Here is a breakdown of the general sequence of events:
+  Here is a breakdown of the general sequence of events, like the one seen in @perform_shared_lock:
   + A lock is acquired for the file channel,
     using either `acquireSharedLockFor(FileChannel channel)` or `acquireExclusiveLockFor(FileChannel channel)`.
 
   + Once the lock is acquired,
     the method executes the provided operation.
-    This ensures that file operations happen safely without interference from other threads or processes.
+    This ensures that file operations happen safely,
+    without interference from other threads or processes.
 
   + To avoid resource contention or deadlocks,
     the private methods explicitly release the acquired lock as soon as the operation is completed.
@@ -862,13 +865,47 @@ Following is a description of the practical solutions used by the classes to ens
     it invokes the provided `onFileCreate` callback to initialize an empty state.
     This method must be called manually during the system's initialization phase to set up the file for subsequent operations.
 
+    #code(caption: [`init` method implementation.])[
+      ```java
+    public final synchronized void init(final Runnable onFileCreate) {
+        if (file.exists() && file.isFile()) {
+            // Load the file contents for the first time
+            locker.performWithSharedLockOn(file, channel -> {
+                ensureLoaded(channel);
+                return null;
+            });
+        } else {
+            // Open the file for writing to create it
+            locker.performWithExclusiveLockOn(file, channel -> {
+                // Initialize data
+                onFileCreate.run();
+                // Persist data initialized in `onFileCreate`
+                persist(channel);
+                return null;
+            });
+        }
+    }
+      ```
+    ]
+
   - `read(Supplier operation)`:
     acquires a shared lock via `FileLocker`,
     enabling safe read access to the file without blocking other readers,
     then executes the given operation within the lock's scope,
     ensuring consistent state retrieval.
 
-  - `update(Supplier<T> operation)`:
+    #code(caption: [`read` method implementation.])[
+      ```java
+      public final <T> T read(final Supplier<T> operation) {
+          return locker.performWithSharedLockOn(file, channel -> {
+              ensureLoaded(channel);
+              return operation.get();
+          });
+      }
+      ```
+    ] <locked_read>
+
+  - `update(Supplier operation)`:
     uses an exclusive lock to guarantee write safety.
     It applies the provided operation while ensuring no other process or thread can read or write to the file during the update.
 
@@ -883,11 +920,99 @@ Following is a description of the practical solutions used by the classes to ens
     it invokes `load()` to refresh the in-memory state.
     Otherwise, no action is taken, avoiding unnecessary file accesses.
 
+    #code(caption: [`ensureLoaded` implementation.])[
+      ```java
+      private synchronized void ensureLoaded(final FileChannel channel) {
+          if (file.lastModified() > fileLastRead) {
+              fileLastRead = System.currentTimeMillis();
+              load(channel);
+          }
+      }
+      ```
+    ]
+
   - `persist()`:
     ensures the in-memory state is saved back to the file system by invoking `save()`.
     Once the operation completes successfully,
     it updates `fileLastRead`,
     to ensure that subsequent checks correctly reflect the file's current state.
+
+    #code(caption: [`persist` implementation.])[
+      ```java
+      private synchronized void persist(final FileChannel channel) {
+          save(channel);
+          fileLastRead = System.currentTimeMillis();
+      }
+      ```
+    ] <locked_read>
+
+===== File Parsing
+The `PermissionFileParser` is responsible for reading and writing permission data to and from an XML-based structure,
+using streams that reference the permission file.
+These are obtained by using `LockedOperation`,
+delegating the complex task of physical access to other classes in the component.
+This allows the class to focus purely on processing the data,
+without having to handle files directly.
+
+The parser relies on standard XML parsing and transformation libraries to handle structured permission data efficiently
+The high-level methods, `read()` and `write()`,
+handle the setup for parsing and serialization tasks,
+but delegate most of the actual work to dedicated helper methods.
+
+Here follows a description of the defined operations:
+- XML parsing (`read()`):
+  the method initializes the XML structure by reading from an input stream,
+  identifying `<app>` elements for each UID,
+  and invoking the `fillPermissions()` helper to populate the in-memory representation with permission objects for different types (install, runtime, and groups).
+  This design ensures a modular handling of XML parsing logic.
+
+- XML Serialization (`write()`):
+  this method creates an XML document by iterating over UIDs and their permissions,
+  appending them as `<app>` elements.
+  It uses the `addPermissions()` helper method to create and structure XML nodes for each permission type.
+  The serialized output is then transformed and written to an output stream.
+
+@permission_file provides an example of a permissions file,
+showing its XML structure and the type of data it contains.
+
+#code(caption: [Permissions file contents.])[
+  #set text(.95em)
+  ```xml
+  <!-- /data/user/0/io.va.exposed64/virtual/data/app/system/permissions.xml -->
+  <?xml version="1.0" encoding="UTF-8" ?>
+  <permissions>
+      <app uid="10003" >
+          <install-permissions>
+              <permission name="android.permission.INTERNET" status="GRANTED" />
+          </install-permissions>
+          <runtime-permissions>
+              <permission name="android.permission.READ_CONTACTS"
+                  group="android.permission-group.CONTACTS"
+                  status="UNREQUESTED|deniedOnce|override" />
+              <permission name="android.permission.CALL_PHONE"
+                  group="android.permission-group.PHONE"
+                  status="ALWAYS_ASK|grantedOnce" />
+              <permission name="android.permission.WRITE_CONTACTS"
+                  group="android.permission-group.CONTACTS"
+                  status="GRANTED" />
+              <permission name="android.permission.CAMERA"
+                  group="android.permission-group.CAMERA"
+                  status="GRANTED" />
+              <permission name="android.permission.RECORD_AUDIO"
+                  group="android.permission-group.MICROPHONE"
+                  status="UNREQUESTED" />
+          </runtime-permissions>
+          <permission-groups>
+              <permission name="android.permission-group.CONTACTS" status="GRANTED" />
+              <permission name="android.permission-group.PHONE" status="ALWAYS_ASK" />
+              <permission name="android.permission-group.MICROPHONE" status="UNREQUESTED" />
+              <permission name="android.permission-group.CAMERA" status="GRANTED" />
+          </permission-groups>
+      </app>
+      <!-- Other apps... -->
+  </permissions>
+  ```
+] <permission_file>
 
 ===== `PermissionCache`
 The class extends `LockedOperation`,
@@ -909,6 +1034,31 @@ Following is a breakdown of the class methods:
   The method ensures that the current process has permission to access the given UID's permissions, using `requirePermissionToManage(int uid)`,
   or `requirePermissionToManageAll()` if the process is trying to access the entire permission cache.
 
+  #code(caption: [Implementation of the method for accessing a specific UID's permissions.])[
+    #set text(.95em)
+    ```java
+    public final <T> T read(final int uid, final Function<AppPermissions, T> operation) {
+        requirePermissionToManage(uid);
+        return read(() -> {
+            final var permissions = cache.get(uid);
+            return operation.apply(permissions != null
+                    ? permissions : new AppPermissions());
+        });
+    }
+    ```
+  ]
+  #code(caption: [Implementation of the method for accessing the entire permission cache.])[
+    #set text(.95em)
+    ```java
+    public final <T> T read(final Function<Map<Integer, AppPermissions>, T> operation) {
+        requirePermissionToManageAll();
+        return read(() -> {
+            return operation.apply(cache);
+        });
+    }
+    ```
+  ]
+
 - `update()`:
   allows modifications to the permissions of either a specific UID or the entire cache.
   Similarly to the `read()` method,
@@ -918,14 +1068,59 @@ Following is a breakdown of the class methods:
 
 - `requirePermissionToManage(int uid)` and `requirePermissionToManageAll()`:
   they enforce security restrictions based on the calling UID.
+  - `requirePermissionToManage()` ensures that normal app processes can only access or modify permissions for their own UID.
+
+    #code(caption: [Implementation of the restriction on other users' permissions.])[
+      #set text(.95em)
+      ```java
+      private void requirePermissionToManage(final int uid) {
+          final int callingUid = VBinder.getCallingUid();
+          if (CORE.isVAppProcess() && callingUid != uid) {
+              throw new SecurityException(String.format(
+                          "User %d is trying to access user %d permissions",
+                          callingUid, uid));
+          }
+      }
+      ```
+    ]
+
   - `requirePermissionToManageAll()` restricts access to all permission data for processes that belong to virtual apps,
     ensuring that only the virtualization framework's process can perform such operations.
-  - `requirePermissionToManage()` ensures that normal app processes can only access or modify permissions for their own UID.
+
+    #code(caption: [Implementation of the restriction on all users' permissions.])[
+      #set text(.95em)
+      ```java
+      private void requirePermissionToManageAll() {
+          // Trigger only if current process is from a virtual app and it has been started
+          if (CORE.isVAppProcess() && CORE.isStartup()) {
+              throw new SecurityException(String.format(
+                          "User %d is trying to access all users permissions",
+                          VBinder.getCallingUid()));
+          }
+      }
+      ```
+    ]
 
 - `load()` and `save()`:
   they implement the abstract method defined in `LockedOperation` by parsing and serializing the permission cache,
   using the `PermissionFileParser` instance present in the class.
   `LockedOperation` internal implementation of other methods will use these to keep the permissions cache synchronized with the persistence layer.
+
+  #code(caption: [`load` method implementation, using the parser.])[
+    #set text(.95em)
+    ```java
+    @Override
+    protected void load(final FileChannel channel) {
+        try {
+            VLog.i(TAG, "Loading permission cache from file");
+            cache = parser.read(Channels.newInputStream(channel));
+        } catch (Exception e) {
+            VLog.e(TAG, "Could not read permissions file");
+            e.printStackTrace();
+        }
+    }
+    ```
+  ]
 
 
 === Management Core Component

@@ -14,8 +14,6 @@ System services typically perform internal permission checks at this stage,
 making the virtualization framework unable to control the result,
 unless specific hooks are implemented for these operations beforehand.
 
-// TODO: diagram?
-
 == Potential Solutions
 While various solutions could address these challenges,
 each has significant limitations.
