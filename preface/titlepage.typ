@@ -11,7 +11,6 @@
   #v(10pt)
 
   #text(size: 22pt, strong(affiliation.university))
-  #v(.5em)
 
   #line(length: 100%, stroke: .5pt + rgb("#777777"))
 
