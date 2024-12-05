@@ -1,4 +1,4 @@
-#import "util/printed.typ": pagebreak-to-right, pagebreak-to-left, left-right-margins, printed
+#import "util/printed.typ": pagebreak-to-right, pagebreak-to-left, margin, printed
 #import "util/header.typ": header, chapter
 
 #import "preface/titlepage.typ": titlepage
@@ -39,17 +39,7 @@
   )
 
   set page(
-    margin: if printed {(
-      top: 1in + 22pt + 18pt + 12pt,
-      inside: 3.7cm,
-      outside: 2.3cm,
-      bottom: 3.5cm,
-    )} else {(
-      top: 1in + 22pt + 18pt + 12pt,
-      left: 3cm,
-      right: 3cm,
-      bottom: 3.5cm,
-    )},
+    margin: margin(),
     header-ascent: 12pt + 18pt
   )
   set text(

@@ -71,6 +71,8 @@
 ) = {
   if chapter-opening {
     align(right)[#page-number]
+    // Use hide to still consider the line in the layout and keep the right spacing
+    hide(line)
   } else {
     if calc.rem(here().page(), 2) == 0 {
       grid(
@@ -100,8 +102,8 @@
     next_chapters.len() > 0 and next_chapters.at(0).location().page() == here().page()
   }
   let line = {
-    v(-.5em)
-    line(length: 100%, stroke: .3pt)
+    v(.5em, weak: true)
+    line(length: 100%, stroke: .5pt)
   }
 
   if printed {

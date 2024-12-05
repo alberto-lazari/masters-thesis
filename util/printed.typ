@@ -12,17 +12,15 @@
 }
 
 #let pagebreak-to-right(weak: false, printed: printed) = pagebreak-to("odd", weak, printed)
-
 #let pagebreak-to-left(weak: false, printed: printed) = pagebreak-to("even", weak, printed)
 
-#let left-right-margins(page-number, printed: printed) = {
-  if not printed {
-    return (left: 3cm, right: 3cm)
-  }
-
-  if calc.rem(page-number, 2) == 0 {
-    return (left: 3cm, right: 4cm)
-  } else {
-    return (left: 4cm, right: 3cm)
-  }
+#let margin(printed: printed) = {
+  let digital-margin = 3cm
+  let printed-disparity = if printed { .7cm } else { 0pt }
+  (
+    top: 1in + 22pt + 18pt + 12pt,
+    inside: digital-margin + printed-disparity,
+    outside: digital-margin - printed-disparity,
+    bottom: 3.5cm,
+  )
 }
