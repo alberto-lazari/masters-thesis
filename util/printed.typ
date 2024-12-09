@@ -16,7 +16,7 @@
 
 #let margin(printed: printed) = {
   let digital-margin = 3cm
-  let printed-disparity = if printed { .7cm } else { 0pt }
+  let printed-disparity = if printed { 1cm } else { 0pt }
   (
     top: 1in + 22pt + 18pt + 12pt,
     inside: digital-margin + printed-disparity,

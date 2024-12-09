@@ -51,7 +51,8 @@
     smallcaps(it)
   }
   set outline(depth: 3)
-  show link: set text(fill: accent-color)
+  show link: set text(fill: accent-color) if not printed
+  set raw(theme: none) if printed
   show raw: set text(font: "Menlo")
   show figure: it => {
     v(.5em)
