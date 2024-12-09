@@ -1,5 +1,5 @@
 #let printed = {
-  let input = sys.inputs.at("printed", default: "true")
+  let input = sys.inputs.at("printed", default: "false")
   if input in ("true": true, "false": false) {
     input == "true"
   } else {
