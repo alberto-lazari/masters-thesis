@@ -157,7 +157,7 @@
     set page(
       header: header(chapter: chapter(number: false), subsection: none),
     )
-    bibliography("sources.bib", style: "bib-style.csl")
+    bibliography("sources.bib", style: "ieee-bib-style.csl")
 
     body
   }
